@@ -1,0 +1,1 @@
+please read carefully lgog jo navbar hai us ki defualt hight width use karo same with footer or bg ma color add karna ki koi zarrorat ni hai or ager logog ki defualt width or height small hai to batwo wo ma adjsut karta hoon
