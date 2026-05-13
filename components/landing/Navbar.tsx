@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import updateLogo from "./assests/update logo.png";
 
 const leftNav = ["Services", "How it works", "About us"];
@@ -43,16 +44,20 @@ export default function Navbar() {
 
           {/* Dashboard dropdown */}
           <div className="relative">
-            <button
-              onClick={() => setDashOpen(!dashOpen)}
-              onBlur={() => setTimeout(() => setDashOpen(false), 150)}
-              className="flex items-center gap-1 text-sm text-neutral hover:text-primary transition-colors font-medium"
-            >
-              Dashboard
-              <svg viewBox="0 0 24 24" fill="none" className={`w-3 h-3 mt-px transition-transform duration-200 ${dashOpen ? "rotate-180" : ""}`} stroke="currentColor" strokeWidth={2.5}>
-                <polyline points="6 9 12 15 18 9" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+            <div className="flex items-center gap-1">
+              <Link href="/dashboard" className="text-sm text-neutral hover:text-primary transition-colors font-medium">
+                Dashboard
+              </Link>
+              <button
+                onClick={() => setDashOpen(!dashOpen)}
+                onBlur={() => setTimeout(() => setDashOpen(false), 150)}
+                className="text-neutral hover:text-primary transition-colors"
+              >
+                <svg viewBox="0 0 24 24" fill="none" className={`w-3 h-3 mt-px transition-transform duration-200 ${dashOpen ? "rotate-180" : ""}`} stroke="currentColor" strokeWidth={2.5}>
+                  <polyline points="6 9 12 15 18 9" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
 
             {dashOpen && (
               <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-neutral/10 py-2 z-50">
