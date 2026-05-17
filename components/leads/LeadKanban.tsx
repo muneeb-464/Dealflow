@@ -159,20 +159,32 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange }: {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const openMenu = () => {
-    if (btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect();
-      setMenuPos({ top: r.bottom + 4, left: r.right - 168 });
-    }
+    if (!btnRef.current) return;
+    const r = btnRef.current.getBoundingClientRect();
+    const menuW = 172;
+    const menuH = 320;
+    let left = r.right - menuW;
+    let top = r.bottom + 6;
+    if (left < 8) left = 8;
+    if (left + menuW > window.innerWidth - 8) left = window.innerWidth - menuW - 8;
+    if (top + menuH > window.innerHeight - 8) top = r.top - menuH - 6;
+    setMenuPos({ top, left });
     setMenuOpen(true);
   };
 
   useEffect(() => {
     if (!menuOpen) return;
-    const close = () => setMenuOpen(false);
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
+    const handleOutside = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!menuRef.current?.contains(t) && !btnRef.current?.contains(t)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
   }, [menuOpen]);
 
   return (
@@ -188,10 +200,10 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange }: {
         </div>
 
         {/* 3-dot menu */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 relative">
           <button
             ref={btnRef}
-            onClick={(e) => { e.stopPropagation(); menuOpen ? setMenuOpen(false) : openMenu(); }}
+            onClick={() => menuOpen ? setMenuOpen(false) : openMenu()}
             className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-neutral-light transition-colors opacity-0 group-hover:opacity-100"
             style={{ color: "#9ca3af" }}
           >
@@ -204,13 +216,13 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange }: {
 
           {menuOpen && (
             <div
-              onMouseDown={(e) => e.stopPropagation()}
+              ref={menuRef}
               className="bg-white rounded-xl py-1.5"
               style={{
                 position: "fixed",
                 top: menuPos.top,
                 left: menuPos.left,
-                width: "168px",
+                width: "172px",
                 zIndex: 9999,
                 boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
                 border: "1px solid #e5e7eb",
@@ -218,7 +230,8 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange }: {
             >
               {/* Edit */}
               <button
-                onClick={() => { onEdit(lead); setMenuOpen(false); }}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={() => { setMenuOpen(false); onEdit(lead); }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral hover:text-primary hover:bg-neutral-light transition-colors"
               >
                 <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -233,7 +246,8 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange }: {
                 {ALL_STATUSES.filter((s) => s !== lead.status).map((s) => (
                   <button
                     key={s}
-                    onClick={() => { onStatusChange(lead.id, s); setMenuOpen(false); }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => { setMenuOpen(false); onStatusChange(lead.id, s); }}
                     className="w-full flex items-center gap-2.5 px-3 py-1.5 text-xs text-neutral hover:text-primary hover:bg-neutral-light transition-colors"
                   >
                     <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: STATUS_DOT[s] }} />
@@ -245,7 +259,8 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange }: {
               {/* Delete */}
               <div style={{ borderTop: "1px solid #f3f4f6", marginTop: "4px", paddingTop: "4px" }}>
                 <button
-                  onClick={() => { onDelete(lead.id); setMenuOpen(false); }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={() => { setMenuOpen(false); onDelete(lead.id); }}
                   className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-red-50 transition-colors"
                   style={{ color: "#F97316" }}
                 >

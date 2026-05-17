@@ -1,6 +1,7 @@
 "use client";
 import { useState, useMemo } from "react";
 import { useLeadStore } from "@/store/leadStore";
+import { useReminderStore } from "@/store/reminderStore";
 import LeadTable, { Lead } from "@/components/leads/LeadTable";
 import LeadKanban from "@/components/leads/LeadKanban";
 import AddLeadModal from "@/components/leads/AddLeadModal";
@@ -10,6 +11,7 @@ const STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Conv
 
 export default function LeadsPage() {
   const { leads, addLead, updateLead, deleteLead, setStatus } = useLeadStore();
+  const { addReminder } = useReminderStore();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editLead, setEditLead] = useState<Lead | null>(null);
@@ -37,6 +39,15 @@ export default function LeadsPage() {
       updateLead(editLead.id, data);
     } else {
       addLead(data);
+      addReminder({
+        title: `Update lead — ${data.clientName}`,
+        description: "Lead added recently. Check if follow-up is needed.",
+        type: "lead",
+        linkedName: data.clientName,
+        channels: ["in-app"],
+        frequency: "every2days",
+        nextReminderAt: new Date(Date.now() + 2 * 86400000).toISOString(),
+      });
     }
     setEditLead(null);
   };

@@ -12,6 +12,7 @@ export interface Lead {
   service: string;
   notes: string;
   sentAt: string;
+  assignedTo?: string;
 }
 
 interface Props {

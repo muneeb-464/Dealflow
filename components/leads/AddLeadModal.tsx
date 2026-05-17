@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import type { Lead } from "./LeadTable";
 import type { LeadStatus } from "./LeadStatusBadge";
+import { useWorkspaceStore } from "@/store/workspaceStore";
 
 const PLATFORMS = ["Upwork", "Fiverr", "LinkedIn", "Direct", "Referral", "WhatsApp", "Other"];
 const STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
@@ -22,9 +23,11 @@ const empty = (): Omit<Lead, "id"> => ({
   service: "",
   notes: "",
   sentAt: new Date().toISOString().slice(0, 10),
+  assignedTo: "",
 });
 
 export default function AddLeadModal({ open, onClose, onSave, editLead }: Props) {
+  const members = useWorkspaceStore((s) => s.members);
   const [form, setForm] = useState(empty());
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
 
@@ -153,6 +156,16 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
               rows={3}
               className={`${inputCls(false)} resize-none`}
             />
+          </Field>
+
+          {/* Assign To */}
+          <Field label="Assign To">
+            <select value={form.assignedTo ?? ""} onChange={(e) => set("assignedTo", e.target.value)} className={inputCls(false)}>
+              <option value="">Unassigned</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
+              ))}
+            </select>
           </Field>
         </div>
 
