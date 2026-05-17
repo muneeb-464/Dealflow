@@ -32,10 +32,11 @@ export default function Navbar() {
         {/* Logo — centered on desktop, left on mobile */}
         <div className="lg:absolute lg:left-1/2 lg:-translate-x-1/2">
           <div className="flex items-center gap-2">
-            <Image src={updateLogo} alt="Dealflow icon" width={32} height={32} className="object-contain" />
+            <a className="flex items-center gap-2.5" href="/">  <Image src={updateLogo} alt="Dealflow icon" width={32} height={32} className="object-contain" />
             <span className="font-display font-bold text-xl tracking-tight text-primary">
               DEAL<span className="text-secondary">FLOW</span>
-            </span>
+            </span></a>
+           
           </div>
         </div>
 

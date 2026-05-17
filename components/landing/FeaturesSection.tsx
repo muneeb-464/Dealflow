@@ -169,11 +169,11 @@ export default function FeaturesSection() {
               </span>
 
               {/* Green top accent bar */}
-              <div className="w-10 h-1 bg-secondary rounded-full mb-6" />
+              <div className="w-10 h-1 bg-secondary/10 rounded-full mb-6" />
 
               {/* Icon */}
               <div className="relative w-11 h-11 mb-5">
-                <div className="absolute inset-0 rounded-2xl" style={{ background: "radial-gradient(circle, rgba(74,222,128,0.2) 0%, transparent 70%)", transform: "scale(2.2)" }} />
+                <div className="absolute inset-0 rounded-2xl "   />
                 <div className="relative w-11 h-11 rounded-2xl bg-primary flex items-center justify-center text-secondary" style={{ boxShadow: "0 0 20px rgba(74,222,128,0.2)" }}>
                   {feature.icon}
                 </div>

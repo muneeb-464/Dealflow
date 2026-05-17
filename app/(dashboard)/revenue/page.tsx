@@ -1,9 +1,9 @@
 "use client";
 import { useMemo } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useClientStore } from "@/store/clientStore";
 import { useLeadStore } from "@/store/leadStore";
-import StatCard from "@/components/dashboard/StatCard";
-import RevenueChart from "@/components/dashboard/RevenueChart";
+import { PLATFORMS, PLATFORM_COLORS } from "@/constants/platforms";
 import { formatCurrency, getInitials } from "@/lib/utils";
 import type { Client } from "@/types/client";
 
@@ -13,7 +13,15 @@ const STATUS_CLS: Record<Client["status"], string> = {
   churned:  "bg-tertiary/15 text-tertiary",
 };
 
-const CURRENCY_COLORS = ["bg-secondary", "bg-tertiary", "bg-primary", "bg-neutral/60", "bg-secondary/50", "bg-tertiary/50", "bg-primary/50"];
+function TooltipContent({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="bg-primary text-white text-xs px-3 py-2 rounded-xl shadow-xl">
+      <p className="text-white/50 mb-0.5">{label}</p>
+      <p className="font-bold font-display text-secondary">{payload[0].value.toLocaleString()} USD eq.</p>
+    </div>
+  );
+}
 
 export default function RevenuePage() {
   const clients = useClientStore((s) => s.clients);
@@ -21,12 +29,28 @@ export default function RevenuePage() {
 
   const stats = useMemo(() => {
     const active = clients.filter((c) => c.status === "active");
-    const usdRevenue = active.filter((c) => c.currency === "USD").reduce((s, c) => s + c.totalRevenue, 0);
+    const churned = clients.filter((c) => c.status === "churned");
     const converted = leads.filter((l) => l.status === "Converted");
     const leadRevenue = converted.reduce((s, l) => s + Number(l.amount), 0);
     const avgDeal = converted.length ? Math.round(leadRevenue / converted.length) : 0;
-    return { activeCount: active.length, usdRevenue, leadRevenue, avgDeal, convertedCount: converted.length };
+    return { active: active.length, churned: churned.length, leadRevenue, avgDeal, convertedCount: converted.length };
   }, [clients, leads]);
+
+  const byPlatform = useMemo(() => {
+    const map: Record<string, number> = {};
+    clients.forEach((c) => {
+      const usdEq = c.currency === "USD" ? c.totalRevenue
+        : c.currency === "PKR" ? c.totalRevenue / 280
+        : c.currency === "GBP" ? c.totalRevenue * 1.27
+        : c.currency === "AED" ? c.totalRevenue * 0.27
+        : c.totalRevenue;
+      map[c.platform] = (map[c.platform] ?? 0) + Math.round(usdEq);
+    });
+    return PLATFORMS
+      .map((p) => ({ platform: p.label, value: map[p.value] ?? 0, key: p.value }))
+      .filter((p) => p.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [clients]);
 
   const byClient = useMemo(() =>
     [...clients].sort((a, b) => b.totalRevenue - a.totalRevenue),
@@ -34,14 +58,14 @@ export default function RevenuePage() {
   );
 
   const byCurrency = useMemo(() => {
-    const map: Record<string, number> = {};
+    const map: Record<string, { total: number; count: number }> = {};
     clients.forEach((c) => {
-      map[c.currency] = (map[c.currency] ?? 0) + c.totalRevenue;
+      if (!map[c.currency]) map[c.currency] = { total: 0, count: 0 };
+      map[c.currency].total += c.totalRevenue;
+      map[c.currency].count += 1;
     });
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+    return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
   }, [clients]);
-
-  const maxRevenue = byClient[0]?.totalRevenue || 1;
 
   return (
     <div className="space-y-5">
@@ -49,67 +73,69 @@ export default function RevenuePage() {
       {/* Header */}
       <div>
         <h2 className="font-display font-bold text-primary text-xl">Revenue</h2>
-        <p className="text-neutral text-xs mt-0.5">Track earnings across clients and leads</p>
+        <p className="text-neutral text-xs mt-0.5">Financial breakdown across clients & deals</p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
-        <StatCard
-          label="Active Client Revenue (USD)"
-          value={`$${stats.usdRevenue.toLocaleString()}`}
-          sub={`${stats.activeCount} active clients`}
-          icon="M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
-          accent="secondary"
-        />
-        <StatCard
-          label="Lead Revenue (Converted)"
-          value={`$${stats.leadRevenue.toLocaleString()}`}
-          sub={`${stats.convertedCount} converted leads`}
-          icon="M22 11.08V12a10 10 0 1 1-5.93-9.14 M22 4L12 14.01l-3-3"
-          accent="secondary"
-        />
-        <StatCard
-          label="Avg Deal Value"
-          value={stats.avgDeal > 0 ? `$${stats.avgDeal.toLocaleString()}` : "$0"}
-          sub={stats.convertedCount > 0 ? "Per converted lead" : "No conversions yet"}
-          icon="M18 20V10 M12 20V4 M6 20v-6"
-          accent={stats.avgDeal > 0 ? "secondary" : "tertiary"}
-        />
-        <StatCard
-          label="Total Clients"
-          value={String(clients.length)}
-          sub={`${clients.filter(c => c.status === "churned").length} churned`}
-          icon="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"
-          accent="secondary"
-        />
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "Converted Lead Revenue", value: `$${stats.leadRevenue.toLocaleString()}`, sub: `${stats.convertedCount} deals closed`, green: true },
+          { label: "Avg Deal Size", value: stats.avgDeal > 0 ? `$${stats.avgDeal.toLocaleString()}` : "—", sub: "Per converted lead", green: stats.avgDeal > 0 },
+          { label: "Active Clients", value: String(stats.active), sub: "Ongoing relationships", green: true },
+          { label: "Churned Clients", value: String(stats.churned), sub: "Lost accounts", green: false },
+        ].map((k) => (
+          <div key={k.label} className="bg-white rounded-2xl p-4 border border-neutral/8 shadow-sm">
+            <p className="text-neutral text-[11px]">{k.label}</p>
+            <p className={`font-display font-bold text-2xl mt-1 ${k.green ? "text-primary" : "text-tertiary"}`}>{k.value}</p>
+            <p className="text-neutral text-[11px] mt-0.5">{k.sub}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Revenue chart + Currency breakdown */}
+      {/* Platform bar chart + Currency pills */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <RevenueChart />
+
+        {/* Revenue by platform — bar chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
+          <p className="font-display font-bold text-primary text-sm">Revenue by Platform</p>
+          <p className="text-neutral text-xs mt-0.5 mb-5">Client revenue converted to USD equivalent</p>
+          {byPlatform.length === 0 ? (
+            <div className="flex items-center justify-center h-40">
+              <p className="text-neutral/50 text-xs">No client revenue yet</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={byPlatform} barSize={32} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                <XAxis dataKey="platform" tick={{ fontSize: 11, fill: "#767776" }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: "#767776" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`} />
+                <Tooltip content={<TooltipContent />} cursor={{ fill: "rgba(74,222,128,0.06)" }} />
+                <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                  {byPlatform.map((entry) => {
+                    const color = PLATFORM_COLORS[entry.key as keyof typeof PLATFORM_COLORS]?.color ?? "#4ADE80";
+                    return <Cell key={entry.key} fill={color} fillOpacity={0.85} />;
+                  })}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
         {/* Revenue by currency */}
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
-          <p className="font-display font-bold text-primary text-sm mb-1">By Currency</p>
-          <p className="text-neutral text-xs mb-4">Client revenue per currency</p>
+          <p className="font-display font-bold text-primary text-sm">By Currency</p>
+          <p className="text-neutral text-xs mt-0.5 mb-4">Client totals per currency</p>
           {byCurrency.length === 0 ? (
-            <p className="text-neutral/50 text-xs text-center py-8">No revenue data</p>
+            <p className="text-neutral/50 text-xs text-center py-8">No data</p>
           ) : (
             <div className="space-y-3">
-              {byCurrency.map(([currency, amount], i) => (
-                <div key={currency}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-semibold text-primary">{currency}</span>
-                    <span className="text-xs font-bold font-display text-primary">{formatCurrency(amount, currency)}</span>
+              {byCurrency.map(([currency, { total, count }]) => (
+                <div key={currency} className="flex items-center justify-between p-3 rounded-xl bg-neutral-light">
+                  <div>
+                    <p className="text-primary text-xs font-bold font-display">{currency}</p>
+                    <p className="text-neutral text-[11px] mt-0.5">{count} client{count > 1 ? "s" : ""}</p>
                   </div>
-                  <div className="h-1.5 bg-neutral/10 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full ${CURRENCY_COLORS[i % CURRENCY_COLORS.length]}`}
-                      style={{ width: `${Math.round((amount / byCurrency[0][1]) * 100)}%` }}
-                    />
-                  </div>
+                  <p className="text-primary font-display font-bold text-sm">{formatCurrency(total, currency)}</p>
                 </div>
               ))}
             </div>
@@ -119,39 +145,52 @@ export default function RevenuePage() {
 
       {/* Client revenue table */}
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
-        <div className="mb-4">
-          <p className="font-display font-bold text-primary text-sm">Client Revenue Breakdown</p>
-          <p className="text-neutral text-xs mt-0.5">Sorted by total revenue</p>
+        <p className="font-display font-bold text-primary text-sm mb-1">Client Accounts</p>
+        <p className="text-neutral text-xs mb-4">All clients sorted by revenue</p>
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-neutral/8">
+                {["Client", "Platform", "Status", "Projects", "Total Revenue"].map((h) => (
+                  <th key={h} className="text-left text-[11px] font-semibold text-neutral uppercase tracking-wide pb-2.5 pr-4 last:pr-0 last:text-right">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {byClient.map((c) => {
+                const plat = PLATFORMS.find((p) => p.value === c.platform)?.label ?? c.platform;
+                const platColor = PLATFORM_COLORS[c.platform as keyof typeof PLATFORM_COLORS];
+                return (
+                  <tr key={c._id} className="border-b border-neutral/5 last:border-0 hover:bg-neutral-light/40 transition-colors">
+                    <td className="py-3 pr-4">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg bg-secondary/10 flex items-center justify-center flex-shrink-0">
+                          <span className="text-secondary font-bold font-display text-[10px]">{getInitials(c.name)}</span>
+                        </div>
+                        <div>
+                          <p className="text-primary text-xs font-semibold">{c.name}</p>
+                          {c.company && <p className="text-neutral text-[11px]">{c.company}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className="text-xs font-semibold px-2 py-1 rounded-lg" style={{ background: platColor?.bg, color: platColor?.color }}>{plat}</span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_CLS[c.status]}`}>{c.status}</span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className="text-neutral text-xs">{c.projectsCount}</span>
+                    </td>
+                    <td className="py-3 text-right">
+                      <span className="text-primary font-bold font-display text-sm">{formatCurrency(c.totalRevenue, c.currency)}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-
-        {byClient.length === 0 ? (
-          <p className="text-neutral/50 text-xs text-center py-8">No clients yet</p>
-        ) : (
-          <div className="space-y-3">
-            {byClient.map((c) => (
-              <div key={c._id} className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-secondary font-bold font-display text-[11px]">{getInitials(c.name)}</span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-primary text-xs font-semibold truncate">{c.name}</span>
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize flex-shrink-0 ${STATUS_CLS[c.status]}`}>{c.status}</span>
-                    </div>
-                    <span className="text-primary text-xs font-bold font-display flex-shrink-0 ml-2">{formatCurrency(c.totalRevenue, c.currency)}</span>
-                  </div>
-                  <div className="h-1.5 bg-neutral/10 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all duration-500 ${c.status === "active" ? "bg-secondary" : c.status === "churned" ? "bg-tertiary" : "bg-neutral/40"}`}
-                      style={{ width: `${Math.round((c.totalRevenue / maxRevenue) * 100)}%` }}
-                    />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

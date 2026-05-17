@@ -2,7 +2,12 @@ import Image from "next/image";
 import updateLogo from "./assests/update logo.png";
 
 const productLinks = ["Features", "Pricing", "How It Works", "Changelog"];
-const companyLinks = ["About", "Blog", "Careers", "Contact"];
+const companyLinks = [
+  { label: "About", href: "/about" },
+  { label: "Blog", href: "/blog" },
+  { label: "Careers", href: "/careers" },
+  { label: "Contact", href: "/contact" },
+];
 
 export default function Footer() {
   return (
@@ -15,10 +20,11 @@ export default function Footer() {
           {/* Brand */}
           <div className="max-w-xs">
             <div className="inline-flex items-center gap-2">
-              <Image src={updateLogo} alt="Dealflow icon" width={40} height={40} className="object-contain" />
+                 <a className="flex items-center gap-2.5" href="/"> <Image src={updateLogo} alt="Dealflow icon" width={40} height={40} className="object-contain" />
               <span className="font-display font-bold text-xl tracking-tight text-white">
                 DEAL<span className="text-secondary">FLOW</span>
-              </span>
+              </span>  </a>
+              
             </div>
             <p className="text-white/40 text-sm mt-3 leading-relaxed">
               Your deals. Your clients. Under control.
@@ -61,8 +67,8 @@ export default function Footer() {
               <p className="text-white/30 text-xs font-semibold uppercase tracking-wider mb-4">Company</p>
               <ul className="space-y-3">
                 {companyLinks.map((l) => (
-                  <li key={l}>
-                    <a href="#" className="text-white/50 text-sm hover:text-white transition-colors block">{l}</a>
+                  <li key={l.label}>
+                    <a href={l.href} className="text-white/50 text-sm hover:text-white transition-colors block">{l.label}</a>
                   </li>
                 ))}
               </ul>
@@ -74,9 +80,9 @@ export default function Footer() {
         <div className="mt-10 pt-8 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-white/25 text-xs">© 2026 Dealflow. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <a href="#" className="text-white/25 text-xs hover:text-white/50 transition-colors">Privacy Policy</a>
+            <a href="/privacy" className="text-white/25 text-xs hover:text-white/50 transition-colors">Privacy Policy</a>
             <span className="text-white/15 text-xs">·</span>
-            <a href="#" className="text-white/25 text-xs hover:text-white/50 transition-colors">Terms of Service</a>
+            <a href="/terms" className="text-white/25 text-xs hover:text-white/50 transition-colors">Terms of Service</a>
           </div>
         </div>
 

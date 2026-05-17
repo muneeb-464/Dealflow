@@ -144,7 +144,7 @@ export default function RevenueChart() {
   ];
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
+    <div className="bg-white rounded-2xl p-5 shadow-sm ">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-1">
         <div>
