@@ -5,7 +5,7 @@ import Link from "next/link";
 import updateLogo from "./assests/update logo.png";
 
 const leftNav = ["Services", "How it works", "About us"];
-const rightNav = ["Workspace & Team", "Settings"];
+const rightNav = [{ label: "Workspace & Team", href: "/workspace" }, { label: "Settings", href: "/settings" }];
 const dashboardLinks = [
   { label: "Clients & Orders", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" },
   { label: "Reminders", icon: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" },
@@ -79,7 +79,7 @@ export default function Navbar() {
           </div>
 
           {rightNav.map((item) => (
-            <a key={item} className="text-sm text-neutral hover:text-primary transition-colors font-medium cursor-pointer">{item}</a>
+            <a key={item.label} href={item.href} className="text-sm text-neutral hover:text-primary transition-colors font-medium cursor-pointer">{item.label}</a>
           ))}
 
           <div className="w-px h-4 bg-neutral/20" />
@@ -125,9 +125,9 @@ export default function Navbar() {
             </button>
           ))}
           {rightNav.map((item) => (
-            <button key={item} className="text-left py-3 px-4 text-sm font-medium text-primary hover:bg-neutral-light rounded-xl transition-colors" onClick={() => setMenuOpen(false)}>
-              {item}
-            </button>
+            <a key={item.label} href={item.href} className="text-left py-3 px-4 text-sm font-medium text-primary hover:bg-neutral-light rounded-xl transition-colors block" onClick={() => setMenuOpen(false)}>
+              {item.label}
+            </a>
           ))}
           <div className="mt-3 pt-3 border-t border-neutral/10 flex gap-3">
             <a href="/login" className="flex-1 py-3 border border-neutral/25 text-primary text-sm font-semibold rounded-full text-center">Login</a>

@@ -6,6 +6,7 @@ import { useClientStore } from "@/store/clientStore";
 import { useAuthStore } from "@/store/authStore";
 import TeamMemberCard from "@/components/team/TeamMemberCard";
 import InviteMemberModal from "@/components/team/InviteMemberModal";
+import Link from "next/link";
 import type { UserRole } from "@/types/user";
 
 const ROLE_FILTERS: (UserRole | "All")[] = ["All", "owner", "manager", "employee"];
@@ -45,6 +46,10 @@ export default function TeamPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
+          <Link href="/workspace" className="flex items-center gap-1 text-neutral text-xs hover:text-primary transition-colors mb-1">
+            <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+            Workspace
+          </Link>
           <h2 className="font-display font-bold text-primary text-xl">Team</h2>
           <p className="text-neutral text-xs mt-0.5">{stats.total} members · {stats.active} active</p>
         </div>

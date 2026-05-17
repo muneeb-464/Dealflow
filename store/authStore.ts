@@ -17,9 +17,14 @@ interface AuthStore {
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
-  isAuthenticated: false,
-  token: null,
-  user: null,
+  isAuthenticated: true,
+  token: "mock-token",
+  user: {
+    id: "m1",
+    name: "Muneeb Ahmed",
+    email: "464muneeb@gmail.com",
+    role: "owner",
+  },
   setAuth: (token, user) => set({ isAuthenticated: true, token, user }),
   clearAuth: () => set({ isAuthenticated: false, token: null, user: null }),
 }));
