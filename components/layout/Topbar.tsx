@@ -1,10 +1,10 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { useUiStore } from "@/store/uiStore";
-import { useAuthStore } from "@/store/authStore";
 import { useReminderStore } from "@/store/reminderStore";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -30,8 +30,16 @@ const pageTitles: Record<string, string> = {
 
 export default function Topbar() {
   const { toggleSidebar } = useUiStore();
-  const user = useAuthStore((s) => s.user);
+  const { user: clerkUser } = useUser();
   const pathname = usePathname();
+  const router = useRouter();
+  const { signOut } = useClerk();
+
+  async function handleSignOut() {
+    setProfileOpen(false);
+    await signOut();
+    router.push("/login");
+  }
   const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
@@ -47,9 +55,12 @@ export default function Topbar() {
     pathname === key || pathname.startsWith(key + "/")
   )?.[1] ?? "Dashboard";
 
-  const initials = user?.name
-    ? user.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-    : "MA";
+  const accountType = (clerkUser?.unsafeMetadata?.accountType as string) ?? "freelancer";
+  const fullName = clerkUser?.fullName ?? clerkUser?.firstName ?? "";
+  const email = clerkUser?.primaryEmailAddress?.emailAddress ?? "";
+  const initials = fullName
+    ? fullName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : email[0]?.toUpperCase() ?? "U";
 
   return (
     <header className="h-16 flex-shrink-0 bg-white border-b border-neutral/10 flex items-center px-4 lg:px-6 gap-3 sticky top-0 z-20">
@@ -120,7 +131,7 @@ export default function Topbar() {
         </button>
 
         {notifOpen && (
-          <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-neutral/10 overflow-hidden z-50">
+          <div onMouseDown={e => e.preventDefault()} className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-xl border border-neutral/10 overflow-hidden z-50">
             <div className="px-4 py-3 border-b border-neutral/10 flex items-center justify-between">
               <p className="font-display font-bold text-primary text-sm">Notifications</p>
               {overdueCount > 0 && (
@@ -158,39 +169,71 @@ export default function Topbar() {
           onBlur={() => setTimeout(() => setProfileOpen(false), 150)}
           className="flex items-center gap-2 pl-1 pr-2 py-1 rounded-xl hover:bg-neutral-light transition-colors"
         >
-          <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center">
-            <span className="text-primary text-xs font-bold font-display">{initials}</span>
+          <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center overflow-hidden flex-shrink-0">
+            {clerkUser?.imageUrl ? (
+              <img src={clerkUser.imageUrl} alt={fullName} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-primary text-xs font-bold font-display">{initials}</span>
+            )}
           </div>
-          <span className="hidden lg:block text-sm font-medium text-primary">{user?.name?.split(" ")[0] ?? "Muneeb"}</span>
+          <span className="hidden lg:block text-sm font-medium text-primary">{fullName.split(" ")[0] || "User"}</span>
           <svg viewBox="0 0 24 24" fill="none" className="hidden lg:block w-3 h-3 text-neutral" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 12 15 18 9" />
           </svg>
         </button>
 
         {profileOpen && (
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-neutral/10 overflow-hidden z-50">
+          <div onMouseDown={e => e.preventDefault()} className="absolute right-0 top-full mt-2 w-52 bg-white rounded-2xl shadow-xl border border-neutral/10 overflow-hidden z-50">
+            {/* User info */}
             <div className="px-4 py-3 border-b border-neutral/10">
-              <p className="text-primary text-sm font-semibold">{user?.name ?? "Muneeb Ahmed"}</p>
-              <p className="text-neutral text-xs mt-0.5 truncate">{user?.email ?? "muneeb@dealflow.com"}</p>
+              <p className="text-primary text-sm font-semibold">{fullName || "User"}</p>
+              <p className="text-neutral text-xs mt-0.5 truncate">{email}</p>
             </div>
-            {[
-              { label: "Profile", icon: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" },
-              { label: "Settings", icon: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" },
-            ].map((item) => (
-              <button key={item.label} className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-neutral hover:text-primary hover:bg-neutral-light transition-colors">
+
+            {/* Quick nav */}
+            <div className="py-1.5">
+              <p className="px-4 py-1 text-[10px] font-bold text-neutral/40 uppercase tracking-wider">Navigate</p>
+              {[
+                { label: "Dashboard",  href: "/dashboard",  icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10" },
+                { label: "Leads",      href: "/leads",      icon: "M22 12h-4l-3 9L9 3l-3 9H2" },
+                { label: "Clients",    href: "/clients",    icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" },
+                { label: "Reminders",  href: "/reminders",  icon: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0" },
+                { label: "Revenue",    href: "/revenue",    icon: "M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" },
+                { label: "Analytics",  href: "/analytics",  icon: "M18 20V10 M12 20V4 M6 20v-6" },
+                { label: "Team",       href: "/team",       icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75", agencyOnly: true },
+              ].filter((item) => !item.agencyOnly || accountType === "agency").map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setProfileOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-2 text-xs font-medium transition-colors hover:bg-neutral-light group ${pathname === item.href || pathname.startsWith(item.href + "/") ? "text-secondary bg-secondary/5" : "text-neutral hover:text-primary"}`}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5 flex-shrink-0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d={item.icon} />
+                  </svg>
+                  {item.label}
+                  {(pathname === item.href || pathname.startsWith(item.href + "/")) && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-secondary flex-shrink-0" />
+                  )}
+                </Link>
+              ))}
+            </div>
+
+            {/* Account */}
+            <div className="border-t border-neutral/10 py-1.5">
+              <p className="px-4 py-1 text-[10px] font-bold text-neutral/40 uppercase tracking-wider">Account</p>
+              <Link href="/settings" onClick={() => setProfileOpen(false)} className="flex items-center gap-3 px-4 py-2 text-xs font-medium text-neutral hover:text-primary hover:bg-neutral-light transition-colors">
                 <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d={item.icon} />
+                  <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
-                {item.label}
-              </button>
-            ))}
-            <div className="border-t border-neutral/10">
-              <Link href="/" className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-tertiary hover:bg-tertiary/5 transition-colors">
+                Settings
+              </Link>
+              <button onClick={handleSignOut} className="w-full flex items-center gap-3 px-4 py-2 text-xs font-medium text-tertiary hover:bg-tertiary/5 transition-colors">
                 <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                   <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4 M16 17l5-5-5-5 M21 12H9" />
                 </svg>
                 Sign out
-              </Link>
+              </button>
             </div>
           </div>
         )}

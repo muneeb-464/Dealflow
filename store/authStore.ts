@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-type Role = "owner" | "manager" | "employee";
+type Role = "owner" | "manager" | "employee" | "invite_guest";
 
 interface AuthStore {
   isAuthenticated: boolean;

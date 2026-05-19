@@ -69,9 +69,10 @@ interface Props {
   onEdit: (lead: Lead) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: LeadStatus) => void;
+  canEdit?: (lead: Lead) => boolean;
 }
 
-export default function LeadKanban({ leads, onEdit, onDelete, onStatusChange }: Props) {
+export default function LeadKanban({ leads, onEdit, onDelete, onStatusChange, canEdit }: Props) {
   return (
     <div className="flex gap-3 overflow-x-auto pb-3" style={{ marginLeft: "-4px", paddingLeft: "4px" }}>
       {COLUMNS.map((col) => {
@@ -128,6 +129,7 @@ export default function LeadKanban({ leads, onEdit, onDelete, onStatusChange }: 
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onStatusChange={onStatusChange}
+                  canAct={!canEdit || canEdit(lead)}
                 />
               ))}
             </div>
@@ -149,12 +151,13 @@ const STATUS_DOT: Record<LeadStatus, string> = {
   Rejected:    "#F97316",
 };
 
-function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange }: {
+function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange, canAct = true }: {
   lead: Lead;
   nextStatus?: LeadStatus;
   onEdit: (l: Lead) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, s: LeadStatus) => void;
+  canAct?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, left: 0 });
@@ -229,20 +232,22 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange }: {
               }}
             >
               {/* Edit */}
-              <button
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={() => { setMenuOpen(false); onEdit(lead); }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral hover:text-primary hover:bg-neutral-light transition-colors"
-              >
-                <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                </svg>
-                Edit Details
-              </button>
+              {canAct && (
+                <button
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={() => { setMenuOpen(false); onEdit(lead); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-neutral hover:text-primary hover:bg-neutral-light transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                  Edit Details
+                </button>
+              )}
 
               {/* Move to */}
               <div style={{ borderTop: "1px solid #f3f4f6", marginTop: "4px", paddingTop: "4px" }}>
-                <p className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider" style={{ color: "#9ca3af" }}>Move to</p>
+                <p className="px-3 pb-1 text-[10px] font-semibold  uppercase tracking-wider" style={{ color: "#9ca3af" }}>Move to</p>
                 {ALL_STATUSES.filter((s) => s !== lead.status).map((s) => (
                   <button
                     key={s}
@@ -257,20 +262,22 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange }: {
               </div>
 
               {/* Delete */}
-              <div style={{ borderTop: "1px solid #f3f4f6", marginTop: "4px", paddingTop: "4px" }}>
-                <button
-                  onMouseDown={(e) => e.stopPropagation()}
-                  onClick={() => { setMenuOpen(false); onDelete(lead.id); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-red-50 transition-colors"
-                  style={{ color: "#F97316" }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
-                  </svg>
-                  Delete Lead
-                </button>
-              </div>
+              {canAct && (
+                <div style={{ borderTop: "1px solid #f3f4f6", marginTop: "4px", paddingTop: "4px" }}>
+                  <button
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => { setMenuOpen(false); onDelete(lead.id); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs hover:bg-red-50 transition-colors"
+                    style={{ color: "#F97316" }}
+                  >
+                    <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6" />
+                    </svg>
+                    Delete Lead
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

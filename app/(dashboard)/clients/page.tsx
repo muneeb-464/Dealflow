@@ -1,5 +1,5 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ClientCard from "@/components/clients/ClientCard";
 import ClientTable from "@/components/clients/ClientTable";
@@ -7,8 +7,10 @@ import AddClientModal from "@/components/clients/AddClientModal";
 import StatCard from "@/components/dashboard/StatCard";
 import { useClientStore } from "@/store/clientStore";
 import { useReminderStore } from "@/store/reminderStore";
+import { useAuthStore } from "@/store/authStore";
 import { Client, CreateClientDto } from "@/types/client";
 import { formatCurrency } from "@/lib/utils";
+import { SkeletonStatCard, SkeletonTable } from "@/components/ui/Skeleton";
 
 type ViewMode = "card" | "table";
 type StatusFilter = "All" | Client["status"];
@@ -19,9 +21,15 @@ const FILTER_LABELS: Record<StatusFilter, string> = {
 };
 
 export default function ClientsPage() {
-  const { clients, addClient, updateClient, deleteClient } = useClientStore();
+  const { clients, loading, fetchClients, addClient, updateClient, deleteClient } = useClientStore();
+
+  useEffect(() => { fetchClients(); }, [fetchClients]);
   const { addReminder } = useReminderStore();
   const router = useRouter();
+  const authUser = useAuthStore((s) => s.user);
+  const userRole = authUser?.role ?? "employee";
+  const canActOnClient = (client: Client) =>
+    userRole === "owner" || userRole === "manager" || client.createdBy === authUser?.id;
 
   const [view, setView] = useState<ViewMode>("card");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
@@ -70,12 +78,31 @@ export default function ClientsPage() {
     setEditClient(null);
   };
 
-  const handleEdit = (client: Client) => { setEditClient(client); setModalOpen(true); };
-  const handleDelete = (id: string) => setDeleteConfirm(id);
+  const handleEdit = (client: Client) => {
+    if (!canActOnClient(client)) return;
+    setEditClient(client);
+    setModalOpen(true);
+  };
+  const handleDelete = (id: string) => {
+    const client = clients.find((c) => c._id === id);
+    if (client && !canActOnClient(client)) return;
+    setDeleteConfirm(id);
+  };
   const confirmDelete = () => {
     if (deleteConfirm) deleteClient(deleteConfirm);
     setDeleteConfirm(null);
   };
+
+  if (loading && clients.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => <SkeletonStatCard key={i} />)}
+        </div>
+        <SkeletonTable />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -225,6 +252,7 @@ export default function ClientsPage() {
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onClick={() => router.push(`/clients/${client._id}`)}
+                canEdit={canActOnClient(client)}
               />
             ))}
             {filtered.length === 0 && (
@@ -240,6 +268,7 @@ export default function ClientsPage() {
             onEdit={handleEdit}
             onDelete={handleDelete}
             onRowClick={(id) => router.push(`/clients/${id}`)}
+            canEdit={canActOnClient}
           />
         )
       )}

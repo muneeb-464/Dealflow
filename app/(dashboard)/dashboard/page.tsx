@@ -1,6 +1,7 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
+import { useUser } from "@clerk/nextjs";
 import { useLeadStore } from "@/store/leadStore";
 import { useClientStore } from "@/store/clientStore";
 import StatCard from "@/components/dashboard/StatCard";
@@ -11,6 +12,12 @@ import { getPlatformCls } from "@/components/leads/platformColors";
 import { PLATFORMS } from "@/constants/platforms";
 import { formatCurrency, formatDate, getInitials } from "@/lib/utils";
 import type { Client } from "@/types/client";
+import { SkeletonStatCard, SkeletonChart, SkeletonActivity, SkeletonPipeline, SkeletonTable } from "@/components/ui/Skeleton";
+
+interface MemberStat {
+  id: string; name: string; role: string;
+  stats: { assignedLeads: number; openLeads: number; convertedLeads: number; followupDue: number; assignedClients: number; winRate: number };
+}
 
 const PIPELINE_STAGES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
 
@@ -30,8 +37,32 @@ const CLIENT_STATUS_CLS: Record<Client["status"], string> = {
 };
 
 export default function DashboardPage() {
+  const { user: clerkUser } = useUser();
+  const isAgency = (clerkUser?.unsafeMetadata?.accountType as string) === "agency";
+
   const leads = useLeadStore((s) => s.leads);
+  const fetchLeads = useLeadStore((s) => s.fetchLeads);
+  const leadsLoading = useLeadStore((s) => s.loading);
   const clients = useClientStore((s) => s.clients);
+  const fetchClients = useClientStore((s) => s.fetchClients);
+  const clientsLoading = useClientStore((s) => s.loading);
+
+  const [teamStats, setTeamStats] = useState<MemberStat[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+
+  useEffect(() => { fetchLeads(); fetchClients(); }, [fetchLeads, fetchClients]);
+
+  useEffect(() => {
+    if (!isAgency) return;
+    setTeamLoading(true);
+    fetch("/api/workspace/analytics/team")
+      .then((r) => r.json())
+      .then((d) => { if (d.members) setTeamStats(d.members); })
+      .catch(() => {})
+      .finally(() => setTeamLoading(false));
+  }, [isAgency]);
+
+  const loading = leadsLoading || clientsLoading;
 
   const stats = useMemo(() => {
     const total = leads.length;
@@ -63,6 +94,24 @@ export default function DashboardPage() {
   }), [clients]);
 
   const totalClients = clients.length || 1;
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+          {[...Array(4)].map((_, i) => <SkeletonStatCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="lg:col-span-2"><SkeletonChart /></div>
+          <SkeletonPipeline />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <SkeletonTable />
+          <SkeletonActivity />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -299,6 +348,71 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Team Performance — agency owners only */}
+      {isAgency && (
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="font-display font-bold text-primary text-sm">Team Performance</p>
+              <p className="text-neutral text-xs mt-0.5">Workload & win rate across your team</p>
+            </div>
+            <Link href="/analytics" className="text-[11px] text-secondary font-semibold hover:underline">Full analytics</Link>
+          </div>
+
+          {teamLoading ? (
+            <div className="space-y-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex items-center gap-3 animate-pulse">
+                  <div className="w-8 h-8 rounded-xl bg-neutral/10 flex-shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-3 bg-neutral/10 rounded w-1/3" />
+                    <div className="h-1.5 bg-neutral/10 rounded-full" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : teamStats.length === 0 ? (
+            <p className="text-neutral/50 text-xs text-center py-6">No team data yet — invite members to get started</p>
+          ) : (
+            <div className="space-y-3">
+              {teamStats.slice(0, 5).map((m) => {
+                const maxLeads = (teamStats[0]?.stats.assignedLeads) || 1;
+                const { assignedLeads, openLeads, convertedLeads, followupDue, winRate } = m.stats;
+                return (
+                  <div key={m.id} className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
+                      <span className="text-primary font-bold font-display text-[10px]">
+                        {m.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-primary text-xs font-semibold truncate">{m.name}</span>
+                          <span className="text-neutral text-[10px] capitalize flex-shrink-0">{m.role}</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          <span className="text-neutral text-[11px]">{openLeads} open · {convertedLeads} won</span>
+                          {followupDue > 0 && (
+                            <span className="text-[10px] font-semibold text-tertiary bg-tertiary/10 px-1.5 py-0.5 rounded-full">{followupDue} due</span>
+                          )}
+                          <span className={`text-[11px] font-bold ${winRate >= 50 ? "text-secondary" : winRate >= 25 ? "text-primary" : "text-tertiary"}`}>
+                            {winRate}%
+                          </span>
+                        </div>
+                      </div>
+                      <div className="h-1.5 bg-neutral/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-secondary rounded-full" style={{ width: `${Math.round((assignedLeads / maxLeads) * 100)}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

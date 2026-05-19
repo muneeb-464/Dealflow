@@ -4,6 +4,7 @@ import { CreateClientDto, Client } from "@/types/client";
 import { PLATFORMS } from "@/constants/platforms";
 import { CURRENCIES } from "@/constants/currencies";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useIsAgency } from "@/hooks/useIsAgency";
 
 const STATUSES: { value: Client["status"]; label: string }[] = [
   { value: "active", label: "Active" },
@@ -32,8 +33,14 @@ interface Props {
 
 export default function AddClientModal({ open, onClose, onSubmit, initial }: Props) {
   const members = useWorkspaceStore((s) => s.members);
+  const fetchMembers = useWorkspaceStore((s) => s.fetchMembers);
+  const isAgency = useIsAgency();
   const [form, setForm] = useState<CreateClientDto>(empty());
   const [errors, setErrors] = useState<Partial<Record<keyof CreateClientDto, string>>>({});
+
+  useEffect(() => {
+    if (open && isAgency && members.length === 0) fetchMembers();
+  }, [open, isAgency, fetchMembers, members.length]);
 
   useEffect(() => {
     if (open) {
@@ -203,15 +210,17 @@ export default function AddClientModal({ open, onClose, onSubmit, initial }: Pro
             />
           </Field>
 
-          {/* Assign To */}
-          <Field label="Assign To">
-            <select value={form.assignedTo ?? ""} onChange={(e) => set("assignedTo", e.target.value)} className={inputCls(false)}>
-              <option value="">Unassigned</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
-              ))}
-            </select>
-          </Field>
+          {/* Assign To — agency only */}
+          {isAgency && (
+            <Field label="Assign To">
+              <select value={form.assignedTo ?? ""} onChange={(e) => set("assignedTo", e.target.value)} className={inputCls(false)}>
+                <option value="">Unassigned</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.userId}>{m.name} ({m.role})</option>
+                ))}
+              </select>
+            </Field>
+          )}
         </div>
 
         {/* Footer */}

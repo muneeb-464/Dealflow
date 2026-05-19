@@ -1,116 +1,91 @@
 import { create } from "zustand";
 import type { Client, CreateClientDto } from "@/types/client";
 
-let _nextId = 100;
-
-const INITIAL_CLIENTS: Client[] = [
-  {
-    _id: "1",
-    name: "Sarah Johnson",
-    email: "sarah@techcorp.io",
-    phone: "+1 555 0101",
-    company: "TechCorp",
-    platform: "UPWORK",
-    status: "active",
-    totalRevenue: 12500,
-    currency: "USD",
-    projectsCount: 4,
-    workspaceId: "ws1",
-    createdAt: "2025-12-01T00:00:00Z",
-    updatedAt: "2026-01-15T00:00:00Z",
-  },
-  {
-    _id: "2",
-    name: "Ahmed Malik",
-    email: "ahmed@digitalstudio.pk",
-    company: "Digital Studio",
-    platform: "DIRECT",
-    status: "active",
-    totalRevenue: 450000,
-    currency: "PKR",
-    projectsCount: 7,
-    workspaceId: "ws1",
-    createdAt: "2025-10-20T00:00:00Z",
-    updatedAt: "2026-02-10T00:00:00Z",
-  },
-  {
-    _id: "3",
-    name: "Emily Chen",
-    email: "emily@brandco.com",
-    phone: "+44 7700 900000",
-    company: "BrandCo",
-    platform: "LINKEDIN",
-    status: "inactive",
-    totalRevenue: 3200,
-    currency: "GBP",
-    projectsCount: 2,
-    notes: "On hold — budget freeze until Q3",
-    workspaceId: "ws1",
-    createdAt: "2025-09-05T00:00:00Z",
-    updatedAt: "2026-01-01T00:00:00Z",
-  },
-  {
-    _id: "4",
-    name: "Carlos Rivera",
-    email: "carlos@rivera.ae",
-    company: "Rivera Group",
-    platform: "REFERRAL",
-    status: "active",
-    totalRevenue: 28000,
-    currency: "AED",
-    projectsCount: 3,
-    workspaceId: "ws1",
-    createdAt: "2026-01-10T00:00:00Z",
-    updatedAt: "2026-04-01T00:00:00Z",
-  },
-  {
-    _id: "5",
-    name: "Zara Hussain",
-    email: "zara@fiverr.user",
-    platform: "FIVERR",
-    status: "churned",
-    totalRevenue: 850,
-    currency: "USD",
-    projectsCount: 1,
-    workspaceId: "ws1",
-    createdAt: "2025-08-01T00:00:00Z",
-    updatedAt: "2025-11-30T00:00:00Z",
-  },
-];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toUIClient(doc: any): Client {
+  return {
+    _id: String(doc._id),
+    name: doc.name,
+    email: doc.email ?? "",
+    phone: doc.phone,
+    company: doc.company,
+    platform: (doc.platform ?? "direct").toUpperCase() as Client["platform"],
+    status: doc.status ?? "active",
+    totalRevenue: doc.totalRevenue ?? 0,
+    currency: doc.currency ?? "USD",
+    projectsCount: doc.orders?.length ?? 0,
+    notes: doc.notes,
+    assignedTo: doc.assignedTo ? String(doc.assignedTo) : undefined,
+    createdBy: doc.createdBy ? String(doc.createdBy?._id ?? doc.createdBy) : undefined,
+    createdByName: doc.createdBy?.name ?? undefined,
+    workspaceId: String(doc.workspaceId),
+    createdAt: doc.createdAt ?? new Date().toISOString(),
+    updatedAt: doc.updatedAt ?? new Date().toISOString(),
+  };
+}
 
 interface ClientStore {
   clients: Client[];
-  addClient: (data: CreateClientDto) => void;
-  updateClient: (id: string, data: Partial<CreateClientDto>) => void;
-  deleteClient: (id: string) => void;
+  loading: boolean;
+  fetchClients: () => Promise<void>;
+  addClient: (data: CreateClientDto) => Promise<void>;
+  updateClient: (id: string, data: Partial<CreateClientDto>) => Promise<void>;
+  deleteClient: (id: string) => Promise<void>;
 }
 
 export const useClientStore = create<ClientStore>((set) => ({
-  clients: INITIAL_CLIENTS,
-  addClient: (data) =>
-    set((s) => ({
-      clients: [
-        {
-          _id: String(_nextId++),
-          ...data,
-          phone: data.phone || undefined,
-          company: data.company || undefined,
-          notes: data.notes || undefined,
-          totalRevenue: data.totalRevenue ?? 0,
-          projectsCount: 0,
-          workspaceId: "ws1",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        ...s.clients,
-      ],
-    })),
-  updateClient: (id, data) =>
-    set((s) => ({
-      clients: s.clients.map((c) =>
-        c._id === id ? { ...c, ...data, updatedAt: new Date().toISOString() } : c
-      ),
-    })),
-  deleteClient: (id) =>
-    set((s) => ({ clients: s.clients.filter((c) => c._id !== id) })),
+  clients: [],
+  loading: false,
+
+  fetchClients: async () => {
+    set({ loading: true });
+    try {
+      const res = await fetch("/api/clients");
+      const data = await res.json();
+      if (res.ok) set({ clients: (data.clients ?? []).map(toUIClient) });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  addClient: async (data) => {
+    const res = await fetch("/api/clients", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...data,
+        platform: data.platform.toLowerCase(),
+      }),
+    });
+    const json = await res.json();
+    if (res.status === 403 && json.error === "no_workspace") {
+      window.location.href = "/workspace-setup";
+      return;
+    }
+    if (res.ok && json.client) {
+      set((s) => ({ clients: [toUIClient(json.client), ...s.clients] }));
+    }
+  },
+
+  updateClient: async (id, data) => {
+    const res = await fetch(`/api/clients/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...data,
+        platform: data.platform ? data.platform.toLowerCase() : undefined,
+      }),
+    });
+    const json = await res.json();
+    if (res.ok && json.client) {
+      set((s) => ({ clients: s.clients.map((c) => (c._id === id ? toUIClient(json.client) : c)) }));
+    }
+  },
+
+  deleteClient: async (id) => {
+    const res = await fetch(`/api/clients/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      set((s) => ({ clients: s.clients.filter((c) => c._id !== id) }));
+    }
+  },
 }));

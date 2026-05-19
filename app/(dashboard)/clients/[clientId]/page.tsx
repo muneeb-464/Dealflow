@@ -73,8 +73,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ clientI
       <div className="bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center flex-shrink-0">
-              <span className="text-secondary font-bold font-display text-lg leading-none">
+            <div className="w-14 h-14 rounded-2xl bg-black flex items-center justify-center flex-shrink-0">
+              <span className="text-white font-bold font-display text-lg leading-none">
                 {getInitials(client.name)}
               </span>
             </div>

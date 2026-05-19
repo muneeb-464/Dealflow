@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
+import { useIsAgency } from "@/hooks/useIsAgency";
+import WorkspaceSwitcher from "@/components/layout/WorkspaceSwitcher";
 
 const navItems = [
   {
@@ -18,6 +20,7 @@ const navItems = [
     label: "Clients",
     href: "/clients",
     icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+    roles: ["owner", "manager", "employee"],
   },
   {
     label: "Reminders",
@@ -73,8 +76,15 @@ export default function Sidebar() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const role = user?.role ?? "employee";
+  const isAgency = useIsAgency();
 
-  const visibleNav = navItems.filter(item => !item.roles || item.roles.includes(role));
+  const visibleNav = navItems.filter(item => {
+    if (!item.roles || item.roles.includes(role)) {
+      if ((item.href === "/team" || item.href === "/workspace") && !isAgency) return false;
+      return true;
+    }
+    return false;
+  });
   const visibleBottom = bottomItems.filter(item => !item.roles || item.roles.includes(role));
 
   return (
@@ -91,6 +101,10 @@ export default function Sidebar() {
           <span className="font-display font-bold text-base tracking-tight text-white">DEAL<span className="text-secondary">FLOW</span></span>
         </Link>
       </div>
+
+      <div className="w-full h-px bg-white/5 flex-shrink-0" />
+
+      <WorkspaceSwitcher />
 
       <div className="w-full h-px bg-white/5 flex-shrink-0" />
 
@@ -136,10 +150,14 @@ export default function Sidebar() {
 
         {/* User profile */}
         <div className="flex items-center gap-3 px-2 py-2.5 mt-1 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
-          <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
-            <span className="text-primary text-xs font-bold font-display">
-              {user?.name ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : "MA"}
-            </span>
+          <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {user?.avatar ? (
+              <img src={user.avatar} alt={user.name ?? ""} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-primary text-xs font-bold font-display">
+                {user?.name ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : "MA"}
+              </span>
+            )}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-white text-xs font-semibold truncate">{user?.name ?? "Muneeb Ahmed"}</p>

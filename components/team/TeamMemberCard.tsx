@@ -5,6 +5,7 @@ interface Props {
   member: WorkspaceMember;
   leadCount: number;
   clientCount: number;
+  winRate?: number;
   isCurrentOwner: boolean;
   onRemove: (id: string) => void;
   onRoleChange: (id: string, role: UserRole) => void;
@@ -20,7 +21,7 @@ function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
 }
 
-export default function TeamMemberCard({ member, leadCount, clientCount, isCurrentOwner, onRemove, onRoleChange }: Props) {
+export default function TeamMemberCard({ member, leadCount, clientCount, winRate, isCurrentOwner, onRemove, onRoleChange }: Props) {
   const canEdit = isCurrentOwner && member.role !== "owner";
 
   return (
@@ -28,8 +29,12 @@ export default function TeamMemberCard({ member, leadCount, clientCount, isCurre
 
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-secondary flex items-center justify-center flex-shrink-0">
-            <span className="text-primary font-bold font-display text-sm">{getInitials(member.name)}</span>
+          <div className="w-11 h-11 rounded-2xl bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {member.avatar ? (
+              <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-primary font-bold font-display text-sm">{getInitials(member.name)}</span>
+            )}
           </div>
           <div className="min-w-0">
             <p className="font-display font-bold text-primary text-sm truncate">{member.name}</p>
@@ -48,7 +53,7 @@ export default function TeamMemberCard({ member, leadCount, clientCount, isCurre
         </div>
       </div>
 
-      <div className="flex items-center gap-4 pt-3 border-t border-neutral/8">
+      <div className="flex items-center gap-3 pt-3 border-t border-neutral/8">
         <div className="flex-1 text-center">
           <p className="font-display font-bold text-primary text-base">{leadCount}</p>
           <p className="text-neutral text-[10px] mt-0.5">Leads</p>
@@ -57,6 +62,13 @@ export default function TeamMemberCard({ member, leadCount, clientCount, isCurre
         <div className="flex-1 text-center">
           <p className="font-display font-bold text-primary text-base">{clientCount}</p>
           <p className="text-neutral text-[10px] mt-0.5">Clients</p>
+        </div>
+        <div className="w-px h-8 bg-neutral/10" />
+        <div className="flex-1 text-center">
+          <p className={`font-display font-bold text-base ${(winRate ?? 0) >= 50 ? "text-secondary" : (winRate ?? 0) >= 25 ? "text-primary" : "text-tertiary"}`}>
+            {winRate ?? 0}%
+          </p>
+          <p className="text-neutral text-[10px] mt-0.5">Win Rate</p>
         </div>
         <div className="w-px h-8 bg-neutral/10" />
         <div className="flex-1 text-center">

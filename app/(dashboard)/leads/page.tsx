@@ -1,21 +1,32 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLeadStore } from "@/store/leadStore";
 import { useReminderStore } from "@/store/reminderStore";
+import { useAuthStore } from "@/store/authStore";
 import LeadTable, { Lead } from "@/components/leads/LeadTable";
 import LeadKanban from "@/components/leads/LeadKanban";
 import AddLeadModal from "@/components/leads/AddLeadModal";
+import ApprovalRequestModal from "@/components/leads/ApprovalRequestModal";
 import { LeadStatus } from "@/components/leads/LeadStatusBadge";
+import { SkeletonTable } from "@/components/ui/Skeleton";
 
 const STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
 
 export default function LeadsPage() {
-  const { leads, addLead, updateLead, deleteLead, setStatus } = useLeadStore();
+  const { leads, loading, fetchLeads, addLead, updateLead, deleteLead, setStatus } = useLeadStore();
+
+  useEffect(() => { fetchLeads(); }, [fetchLeads]);
   const { addReminder } = useReminderStore();
+  const authUser = useAuthStore((s) => s.user);
+  const userRole = authUser?.role ?? "employee";
+  const canActOnLead = (lead: Lead) =>
+    userRole === "owner" || userRole === "manager" || lead.createdBy === authUser?.id;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editLead, setEditLead] = useState<Lead | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [approvalModal, setApprovalModal] = useState<{ id: string; name: string } | null>(null);
+  const [approvalToast, setApprovalToast] = useState("");
   const [view, setView] = useState<"kanban" | "table">("kanban");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "All">("All");
@@ -34,11 +45,11 @@ export default function LeadsPage() {
     return map;
   }, [leads]);
 
-  const handleSave = (data: Omit<Lead, "id">) => {
+  const handleSave = async (data: Omit<Lead, "id">) => {
     if (editLead) {
-      updateLead(editLead.id, data);
+      await updateLead(editLead.id, data);
     } else {
-      addLead(data);
+      await addLead(data);
       addReminder({
         title: `Update lead — ${data.clientName}`,
         description: "Lead added recently. Check if follow-up is needed.",
@@ -53,14 +64,68 @@ export default function LeadsPage() {
   };
 
   const handleEdit = (lead: Lead) => { setEditLead(lead); setModalOpen(true); };
-  const handleDelete = (id: string) => setDeleteConfirm(id);
-  const confirmDelete = () => {
-    if (deleteConfirm) deleteLead(deleteConfirm);
+
+  const handleDelete = (id: string) => {
+    const lead = leads.find((l) => l.id === id);
+    if (!canActOnLead(lead ?? { id, clientName: "", platform: "", amount: "", currency: "", status: "Sent", service: "", notes: "", sentAt: "" })) return;
+    if (userRole === "manager") {
+      setApprovalModal({ id, name: lead?.clientName ?? "Lead" });
+    } else {
+      setDeleteConfirm(id);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (deleteConfirm) await deleteLead(deleteConfirm);
     setDeleteConfirm(null);
   };
 
+  const submitApprovalRequest = async (note: string) => {
+    if (!approvalModal) return;
+    try {
+      const res = await fetch("/api/workspace/approval-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "delete_lead", targetId: approvalModal.id, targetLabel: approvalModal.name, note }),
+      });
+      if (res.ok) {
+        setApprovalToast("Approval request sent to owner");
+        setTimeout(() => setApprovalToast(""), 3500);
+      }
+    } catch { /* silently fail */ }
+    setApprovalModal(null);
+  };
+
+  if (loading && leads.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-1.5">
+            <div className="h-7 w-16 rounded-xl bg-neutral/10 animate-pulse" />
+            <div className="h-3 w-48 rounded-xl bg-neutral/10 animate-pulse" />
+          </div>
+        </div>
+        <SkeletonTable />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
+
+      {approvalToast && (
+        <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white bg-primary">
+          {approvalToast}
+        </div>
+      )}
+
+      {approvalModal && (
+        <ApprovalRequestModal
+          leadName={approvalModal.name}
+          onClose={() => setApprovalModal(null)}
+          onConfirm={submitApprovalRequest}
+        />
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
@@ -166,8 +231,8 @@ export default function LeadsPage() {
       {/* Content */}
       {leads.length > 0 && (
         view === "kanban"
-          ? <LeadKanban leads={filtered} onEdit={handleEdit} onDelete={handleDelete} onStatusChange={setStatus} />
-          : <LeadTable leads={filtered} onEdit={handleEdit} onDelete={handleDelete} />
+          ? <LeadKanban leads={filtered} onEdit={handleEdit} onDelete={handleDelete} onStatusChange={setStatus} canEdit={canActOnLead} />
+          : <LeadTable leads={filtered} onEdit={handleEdit} onDelete={handleDelete} canEdit={canActOnLead} />
       )}
 
       <AddLeadModal

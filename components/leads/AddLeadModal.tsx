@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import type { Lead } from "./LeadTable";
 import type { LeadStatus } from "./LeadStatusBadge";
 import { useWorkspaceStore } from "@/store/workspaceStore";
+import { useIsAgency } from "@/hooks/useIsAgency";
 
 const PLATFORMS = ["Upwork", "Fiverr", "LinkedIn", "Direct", "Referral", "WhatsApp", "Other"];
 const STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
@@ -28,10 +29,14 @@ const empty = (): Omit<Lead, "id"> => ({
 
 export default function AddLeadModal({ open, onClose, onSave, editLead }: Props) {
   const members = useWorkspaceStore((s) => s.members);
+  const fetchMembers = useWorkspaceStore((s) => s.fetchMembers);
+  const isAgency = useIsAgency();
   const [form, setForm] = useState(empty());
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
 
   useEffect(() => {
+    if (!open) return;
+    if (isAgency && members.length === 0) fetchMembers();
     if (editLead) {
       const { id: _id, ...rest } = editLead;
       setForm(rest);
@@ -39,7 +44,7 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
       setForm(empty());
     }
     setErrors({});
-  }, [editLead, open]);
+  }, [editLead, open, isAgency, fetchMembers, members.length]);
 
   if (!open) return null;
 
@@ -158,15 +163,17 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
             />
           </Field>
 
-          {/* Assign To */}
-          <Field label="Assign To">
-            <select value={form.assignedTo ?? ""} onChange={(e) => set("assignedTo", e.target.value)} className={inputCls(false)}>
-              <option value="">Unassigned</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>{m.name} ({m.role})</option>
-              ))}
-            </select>
-          </Field>
+          {/* Assign To — agency only */}
+          {isAgency && (
+            <Field label="Assign To">
+              <select value={form.assignedTo ?? ""} onChange={(e) => set("assignedTo", e.target.value)} className={inputCls(false)}>
+                <option value="">Unassigned</option>
+                {members.map((m) => (
+                  <option key={m.id} value={m.userId}>{m.name} ({m.role})</option>
+                ))}
+              </select>
+            </Field>
+          )}
         </div>
 
         {/* Footer */}

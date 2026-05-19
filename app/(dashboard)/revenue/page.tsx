@@ -6,6 +6,7 @@ import { useLeadStore } from "@/store/leadStore";
 import { PLATFORMS, PLATFORM_COLORS } from "@/constants/platforms";
 import { formatCurrency, getInitials } from "@/lib/utils";
 import type { Client } from "@/types/client";
+import { SkeletonStatCard, SkeletonChart, SkeletonTable } from "@/components/ui/Skeleton";
 
 const STATUS_CLS: Record<Client["status"], string> = {
   active:   "bg-secondary/10 text-secondary",
@@ -25,7 +26,9 @@ function TooltipContent({ active, payload, label }: any) {
 
 export default function RevenuePage() {
   const clients = useClientStore((s) => s.clients);
+  const clientsLoading = useClientStore((s) => s.loading);
   const leads = useLeadStore((s) => s.leads);
+  const leadsLoading = useLeadStore((s) => s.loading);
 
   const stats = useMemo(() => {
     const active = clients.filter((c) => c.status === "active");
@@ -66,6 +69,18 @@ export default function RevenuePage() {
     });
     return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
   }, [clients]);
+
+  if ((clientsLoading || leadsLoading) && clients.length === 0 && leads.length === 0) {
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => <SkeletonStatCard key={i} />)}
+        </div>
+        <SkeletonChart />
+        <SkeletonTable />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

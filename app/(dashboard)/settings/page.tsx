@@ -1,5 +1,7 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
+import { useAuthStore } from "@/store/authStore";
 
 // ── Types ─────────────────────────────────────────────────────────────
 type Section = "profile" | "freelancer" | "workspace" | "notifications" | "billing" | "security" | "danger";
@@ -68,30 +70,111 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 
 // ── Section components ─────────────────────────────────────────────────
 function ProfileSection() {
-  const [form, setForm] = useState({ name: "Muneeb Sajjad", email: "464muneeb@gmail.com", phone: "", bio: "" });
-  const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const { user: clerkUser } = useUser();
+  const [name, setName] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoToast, setPhotoToast] = useState("");
+
+  useEffect(() => {
+    if (clerkUser?.fullName) setName(clerkUser.fullName);
+  }, [clerkUser]);
+
+  const email = clerkUser?.primaryEmailAddress?.emailAddress ?? "";
+  const initials = name ? name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : "U";
+  const avatar = clerkUser?.imageUrl;
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await fetch("/api/users/me", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !clerkUser) return;
+    if (!file.type.startsWith("image/")) { setPhotoToast("Only image files allowed"); return; }
+    if (file.size > 5 * 1024 * 1024) { setPhotoToast("Image must be under 5MB"); return; }
+    setUploadingPhoto(true);
+    try {
+      await clerkUser.setProfileImage({ file });
+      // Sync new avatar URL to DB
+      await fetch("/api/auth/sync", { method: "POST" });
+      setPhotoToast("Photo updated!");
+    } catch {
+      setPhotoToast("Failed to upload photo");
+    } finally {
+      setUploadingPhoto(false);
+      setTimeout(() => setPhotoToast(""), 3000);
+    }
+  }
 
   return (
     <>
+      {photoToast && (
+        <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white bg-primary">
+          {photoToast}
+        </div>
+      )}
       <SectionCard title="Personal Information" desc="Your name and contact details.">
         <div className="flex items-center gap-5 mb-2">
-          <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center flex-shrink-0">
-            <span className="font-display font-bold text-secondary text-lg">MS</span>
+          <div className="relative group flex-shrink-0">
+            {avatar ? (
+              <img src={avatar} alt={name} className="w-16 h-16 rounded-2xl object-cover" />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-primary flex items-center justify-center">
+                <span className="font-display font-bold text-secondary text-lg">{initials}</span>
+              </div>
+            )}
+            <label className={`absolute inset-0 rounded-2xl flex items-center justify-center cursor-pointer transition-all ${uploadingPhoto ? "bg-black/40" : "bg-black/0 group-hover:bg-black/35"}`}>
+              {uploadingPhoto ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+              )}
+              <input type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+            </label>
           </div>
           <div>
-            <button className="text-xs font-semibold text-secondary hover:underline">Upload photo</button>
-            <p className="text-neutral text-xs mt-0.5">JPG or PNG, max 2MB</p>
+            <p className="text-xs font-semibold text-primary">Profile photo</p>
+            <p className="text-neutral text-xs mt-0.5">Hover to upload a new photo (max 5MB)</p>
           </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <Field label="Full Name"><input value={form.name} onChange={e => set("name", e.target.value)} className={inputCls} /></Field>
-          <Field label="Email Address"><input type="email" value={form.email} onChange={e => set("email", e.target.value)} className={inputCls} /></Field>
-          <Field label="Phone (optional)"><input value={form.phone} onChange={e => set("phone", e.target.value)} placeholder="+92 300 0000000" className={inputCls} /></Field>
+          <Field label="Full Name">
+            <input value={name} onChange={e => setName(e.target.value)} className={inputCls} />
+          </Field>
+          <Field label="Email Address">
+            <input type="email" value={email} disabled className={`${inputCls} opacity-50 cursor-not-allowed`} />
+          </Field>
         </div>
-        <Field label="Short Bio">
-          <textarea value={form.bio} onChange={e => set("bio", e.target.value)} rows={3} placeholder="Tell clients a bit about yourself..." className={`${inputCls} resize-none`} />
-        </Field>
-        <SaveBtn />
+        <div className="flex justify-end pt-2">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="group inline-flex items-center gap-2 bg-primary text-secondary px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 hover:bg-secondary hover:text-primary hover:shadow-lg hover:shadow-secondary/25 hover:scale-[1.02] active:scale-100 disabled:opacity-60"
+          >
+            {saved ? "Saved!" : saving ? "Saving..." : "Save Changes"}
+            {!saving && !saved && (
+              <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5" stroke="currentColor" strokeWidth={2.5}>
+                <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+        </div>
       </SectionCard>
     </>
   );
@@ -171,8 +254,43 @@ function FreelancerSection() {
 }
 
 function WorkspaceSection() {
-  const [form, setForm] = useState({ name: "My Agency", timezone: "Asia/Karachi", currency: "USD" });
+  const [form, setForm] = useState({ name: "", timezone: "Asia/Karachi", currency: "USD" });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const set = (k: keyof typeof form, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  useEffect(() => {
+    fetch("/api/workspace")
+      .then(r => r.json())
+      .then(data => {
+        if (data.workspace) {
+          setForm({
+            name: data.workspace.name ?? "",
+            timezone: data.workspace.timezone ?? "Asia/Karachi",
+            currency: data.workspace.currency ?? "USD",
+          });
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await fetch("/api/workspace", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <SectionCard title="Workspace Settings" desc="Affects all team members in this workspace."><p className="text-neutral text-sm py-4 text-center">Loading...</p></SectionCard>;
 
   return (
     <SectionCard title="Workspace Settings" desc="Affects all team members in this workspace.">
@@ -189,7 +307,20 @@ function WorkspaceSection() {
           </select>
         </Field>
       </div>
-      <SaveBtn />
+      <div className="flex justify-end pt-2">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="group inline-flex items-center gap-2 bg-primary text-secondary px-6 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 hover:bg-secondary hover:text-primary hover:shadow-lg hover:shadow-secondary/25 hover:scale-[1.02] active:scale-100 disabled:opacity-60"
+        >
+          {saved ? "Saved!" : saving ? "Saving..." : "Save Changes"}
+          {!saving && !saved && (
+            <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5" stroke="currentColor" strokeWidth={2.5}>
+              <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+      </div>
     </SectionCard>
   );
 }
@@ -312,26 +443,118 @@ function SecuritySection() {
 }
 
 function DangerSection() {
+  const [exporting, setExporting] = useState(false);
+  const [deletingWs, setDeletingWs] = useState(false);
+  const [confirmWs, setConfirmWs] = useState(false);
+  const [toast, setToast] = useState("");
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 3500); };
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/workspace/export");
+      if (!res.ok) { showToast("Export failed. Try again."); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `dealflow-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      showToast("Export failed. Try again.");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleDeleteWorkspace() {
+    setDeletingWs(true);
+    try {
+      const res = await fetch("/api/workspace", { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.error ?? "Delete failed."); return; }
+      window.location.href = "/workspace-setup?reason=deleted";
+    } catch {
+      showToast("Delete failed. Try again.");
+    } finally {
+      setDeletingWs(false);
+      setConfirmWs(false);
+    }
+  }
+
   return (
-    <SectionCard title="Danger Zone" desc="These actions are permanent and cannot be undone.">
-      <div className="space-y-3">
-        {[
-          { label: "Export All Data", desc: "Download all your leads, clients, and revenue as CSV.", action: "Export", safe: true },
-          { label: "Delete Workspace", desc: "Permanently delete this workspace and remove all team members.", action: "Delete Workspace", safe: false },
-          { label: "Delete Account", desc: "Permanently delete your account. All data will be erased within 30 days.", action: "Delete Account", safe: false },
-        ].map(item => (
-          <div key={item.label} className="flex items-center justify-between gap-4 p-4 rounded-xl border border-neutral/10 bg-neutral-light">
-            <div>
-              <p className="text-primary text-sm font-semibold">{item.label}</p>
-              <p className="text-neutral text-xs mt-0.5">{item.desc}</p>
+    <>
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-semibold text-white bg-red-600">
+          {toast}
+        </div>
+      )}
+
+      {/* Delete workspace confirmation modal */}
+      {confirmWs && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setConfirmWs(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <p className="font-display font-bold text-primary text-base mb-2">Delete Workspace?</p>
+            <p className="text-neutral text-sm mb-5">This permanently deletes all leads, clients, team members, and workspace data. This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmWs(false)} className="flex-1 py-2.5 border border-neutral/20 text-primary text-sm font-semibold rounded-xl hover:bg-neutral-light transition-colors">
+                Cancel
+              </button>
+              <button onClick={handleDeleteWorkspace} disabled={deletingWs} className="flex-1 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-colors disabled:opacity-60">
+                {deletingWs ? "Deleting..." : "Yes, Delete"}
+              </button>
             </div>
-            <button className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold transition-all duration-200 hover:scale-105 active:scale-100 ${item.safe ? "bg-primary text-secondary hover:bg-secondary hover:text-primary" : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white hover:border-red-600"}`}>
-              {item.action}
+          </div>
+        </div>
+      )}
+
+      <SectionCard title="Danger Zone" desc="These actions are permanent and cannot be undone.">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-neutral/10 bg-neutral-light">
+            <div>
+              <p className="text-primary text-sm font-semibold">Export All Data</p>
+              <p className="text-neutral text-xs mt-0.5">Download all leads, clients, and revenue as CSV.</p>
+            </div>
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-primary text-secondary hover:bg-secondary hover:text-primary transition-all duration-200 hover:scale-105 active:scale-100 disabled:opacity-60"
+            >
+              {exporting ? "Exporting..." : "Export"}
             </button>
           </div>
-        ))}
-      </div>
-    </SectionCard>
+
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-neutral/10 bg-neutral-light">
+            <div>
+              <p className="text-primary text-sm font-semibold">Delete Workspace</p>
+              <p className="text-neutral text-xs mt-0.5">Permanently delete this workspace and remove all team members.</p>
+            </div>
+            <button
+              onClick={() => setConfirmWs(true)}
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all duration-200 hover:scale-105 active:scale-100"
+            >
+              Delete Workspace
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-neutral/10 bg-neutral-light">
+            <div>
+              <p className="text-primary text-sm font-semibold">Delete Account</p>
+              <p className="text-neutral text-xs mt-0.5">Permanently delete your account. Contact support to proceed.</p>
+            </div>
+            <a
+              href="mailto:support@dealflow.pk?subject=Account Deletion Request"
+              className="flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-600 hover:text-white hover:border-red-600 transition-all duration-200 hover:scale-105 active:scale-100"
+            >
+              Contact Support
+            </a>
+          </div>
+        </div>
+      </SectionCard>
+    </>
   );
 }
 
@@ -339,8 +562,8 @@ function DangerSection() {
 export default function SettingsPage() {
   const [active, setActive] = useState<Section>("profile");
 
-  // mock role — replace with useAuthStore when wired
-  const role = "owner";
+  const authUser = useAuthStore((s) => s.user);
+  const role = authUser?.role ?? "owner";
   const visible = SECTIONS.filter(s => !s.ownerOnly || role === "owner");
 
   const renderSection = () => {

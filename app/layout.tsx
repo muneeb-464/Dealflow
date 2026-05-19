@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Inter } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
@@ -28,7 +29,18 @@ export default function RootLayout({
       lang="en"
       className={`${plusJakartaSans.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>{children}</body>
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <ClerkProvider
+          signInUrl="/login"
+          signUpUrl="/register"
+          signInFallbackRedirectUrl="/dashboard"
+          signUpFallbackRedirectUrl="/workspace-setup"
+          signInForceRedirectUrl="/dashboard"
+          signUpForceRedirectUrl="/workspace-setup"
+        >
+          {children}
+        </ClerkProvider>
+      </body>
     </html>
   );
 }

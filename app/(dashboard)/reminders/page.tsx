@@ -1,9 +1,10 @@
 "use client";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useReminderStore } from "@/store/reminderStore";
 import AddReminderModal from "@/components/reminders/AddReminderModal";
 import StatCard from "@/components/dashboard/StatCard";
 import type { Reminder, CreateReminderDto, ReminderType } from "@/types/reminder";
+import { SkeletonStatCard, SkeletonTable } from "@/components/ui/Skeleton";
 
 type TabFilter = "all" | ReminderType | "due";
 
@@ -44,7 +45,9 @@ function isOverdue(dateStr: string) {
 }
 
 export default function RemindersPage() {
-  const { reminders, addReminder, updateReminder, deleteReminder, setStatus, markDone } = useReminderStore();
+  const { reminders, loading, fetchReminders, addReminder, updateReminder, deleteReminder, setStatus, markDone } = useReminderStore();
+
+  useEffect(() => { fetchReminders(); }, [fetchReminders]);
 
   const [tab, setTab] = useState<TabFilter>("all");
   const [modalOpen, setModalOpen] = useState(false);
@@ -83,6 +86,17 @@ export default function RemindersPage() {
     if (deleteConfirm) deleteReminder(deleteConfirm);
     setDeleteConfirm(null);
   };
+
+  if (loading && reminders.length === 0) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => <SkeletonStatCard key={i} />)}
+        </div>
+        <SkeletonTable />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

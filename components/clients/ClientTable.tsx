@@ -15,9 +15,10 @@ interface Props {
   onEdit: (client: Client) => void;
   onDelete: (id: string) => void;
   onRowClick?: (id: string) => void;
+  canEdit?: (client: Client) => boolean;
 }
 
-export default function ClientTable({ clients, onEdit, onDelete, onRowClick }: Props) {
+export default function ClientTable({ clients, onEdit, onDelete, onRowClick, canEdit }: Props) {
   if (clients.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-neutral/8 flex flex-col items-center justify-center py-16 gap-3">
@@ -56,8 +57,8 @@ export default function ClientTable({ clients, onEdit, onDelete, onRowClick }: P
                   {/* Client */}
                   <td className="px-4 py-3.5">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
-                        <span className="text-secondary font-bold font-display text-[11px] leading-none">
+                      <div className="w-8 h-8 rounded-xl bg-black flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-bold font-display text-[11px] leading-none">
                           {getInitials(client.name)}
                         </span>
                       </div>
@@ -67,6 +68,11 @@ export default function ClientTable({ clients, onEdit, onDelete, onRowClick }: P
                           <p className="text-neutral text-[11px] mt-0.5 truncate max-w-[150px]">{client.company}</p>
                         )}
                         <p className="text-neutral text-[11px] truncate max-w-[150px]">{client.email}</p>
+                        {client.createdByName && (
+                          <span className="inline-block mt-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-secondary/10 text-secondary">
+                            {client.createdByName}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </td>
@@ -104,28 +110,30 @@ export default function ClientTable({ clients, onEdit, onDelete, onRowClick }: P
 
                   {/* Actions */}
                   <td className="px-4 py-3.5">
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onEdit(client); }}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-secondary/10 text-neutral hover:text-secondary transition-colors"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                        </svg>
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onDelete(client._id); }}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-tertiary/10 text-neutral hover:text-tertiary transition-colors"
-                      >
-                        <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                          <path d="M10 11v6M14 11v6" />
-                          <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                        </svg>
-                      </button>
-                    </div>
+                    {(!canEdit || canEdit(client)) && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onEdit(client); }}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-secondary/10 text-neutral hover:text-secondary transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onDelete(client._id); }}
+                          className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-tertiary/10 text-neutral hover:text-tertiary transition-colors"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                            <path d="M10 11v6M14 11v6" />
+                            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               );

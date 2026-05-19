@@ -15,6 +15,8 @@ export interface Client {
   projectsCount: number;
   notes?: string;
   assignedTo?: string;
+  createdBy?: string;
+  createdByName?: string;
   workspaceId: string;
   createdAt: string;
   updatedAt: string;

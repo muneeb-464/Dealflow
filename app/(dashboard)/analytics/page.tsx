@@ -1,12 +1,32 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useLeadStore } from "@/store/leadStore";
 import { useClientStore } from "@/store/clientStore";
-import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useReminderStore } from "@/store/reminderStore";
 import { PLATFORMS } from "@/constants/platforms";
 import type { LeadStatus } from "@/components/leads/LeadStatusBadge";
+import { SkeletonStatCard, SkeletonChart } from "@/components/ui/Skeleton";
+
+interface MemberAnalytics {
+  id: string;
+  userId: string;
+  name: string;
+  email: string;
+  avatar: string | null;
+  role: string;
+  joinedAt: string;
+  stats: {
+    assignedLeads: number;
+    openLeads: number;
+    convertedLeads: number;
+    rejectedLeads: number;
+    followupDue: number;
+    assignedClients: number;
+    winRate: number;
+  };
+}
 
 const STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
 const STATUS_COLORS: Record<LeadStatus, string> = {
@@ -26,10 +46,28 @@ function PieTooltip({ active, payload }: any) {
 }
 
 export default function AnalyticsPage() {
+  const { user: clerkUser } = useUser();
+  const accountType = (clerkUser?.unsafeMetadata?.accountType as string) ?? "freelancer";
+  const isAgency = accountType === "agency";
+
   const leads = useLeadStore((s) => s.leads);
+  const leadsLoading = useLeadStore((s) => s.loading);
   const clients = useClientStore((s) => s.clients);
-  const members = useWorkspaceStore((s) => s.members);
+  const clientsLoading = useClientStore((s) => s.loading);
   const reminders = useReminderStore((s) => s.reminders);
+
+  const [teamAnalytics, setTeamAnalytics] = useState<MemberAnalytics[]>([]);
+  const [teamLoading, setTeamLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isAgency) return;
+    setTeamLoading(true);
+    fetch("/api/workspace/analytics/team")
+      .then((r) => r.json())
+      .then((d) => { if (d.members) setTeamAnalytics(d.members); })
+      .catch(() => {})
+      .finally(() => setTeamLoading(false));
+  }, [isAgency]);
 
   const kpis = useMemo(() => {
     const total = leads.length || 1;
@@ -60,21 +98,26 @@ export default function AnalyticsPage() {
     })).filter((p) => p.leads > 0).sort((a, b) => b.leads - a.leads);
   }, [leads]);
 
-  const teamPerf = useMemo(() =>
-    members.map((m) => ({
-      ...m,
-      leads: leads.filter((l) => (l as any).assignedTo === m.id).length,
-      clients: clients.filter((c) => c.assignedTo === m.id).length,
-    })).sort((a, b) => (b.leads + b.clients) - (a.leads + a.clients)),
-    [members, leads, clients]
-  );
-
   const channelDist = useMemo(() => {
     const map: Record<string, number> = {};
     reminders.forEach((r) => r.channels.forEach((ch) => { map[ch] = (map[ch] ?? 0) + 1; }));
     const total = Object.values(map).reduce((s, v) => s + v, 0) || 1;
     return Object.entries(map).map(([ch, count]) => ({ ch, count, pct: Math.round((count / total) * 100) }));
   }, [reminders]);
+
+  if ((leadsLoading || clientsLoading) && leads.length === 0 && clients.length === 0) {
+    return (
+      <div className="space-y-5">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => <SkeletonStatCard key={i} />)}
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <SkeletonChart />
+          <SkeletonChart />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -157,42 +200,76 @@ export default function AnalyticsPage() {
       {/* Team performance + Reminder channels */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
 
-        {/* Team performance */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
-          <p className="font-display font-bold text-primary text-sm mb-1">Team Performance</p>
-          <p className="text-neutral text-xs mb-4">Assigned leads & clients per member</p>
-          {teamPerf.length === 0 ? (
-            <p className="text-neutral/50 text-xs text-center py-8">No team data</p>
-          ) : (
-            <div className="space-y-3">
-              {teamPerf.map((m) => {
-                const max = (teamPerf[0].leads + teamPerf[0].clients) || 1;
-                const total = m.leads + m.clients;
-                return (
-                  <div key={m.id} className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
-                      <span className="text-primary font-bold font-display text-[10px]">
-                        {m.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-primary text-xs font-semibold truncate">{m.name}</span>
-                        <span className="text-neutral text-[11px] flex-shrink-0 ml-2">{m.leads}L · {m.clients}C</span>
-                      </div>
-                      <div className="h-1.5 bg-neutral/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-secondary rounded-full" style={{ width: `${Math.round((total / max) * 100)}%` }} />
-                      </div>
+        {/* Team performance — agency only */}
+        {isAgency && (
+          <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
+            <p className="font-display font-bold text-primary text-sm mb-1">Team Performance</p>
+            <p className="text-neutral text-xs mb-4">Assigned leads · conversions · win rate per member</p>
+            {teamLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 animate-pulse">
+                    <div className="w-8 h-8 rounded-xl bg-neutral/10 flex-shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3 bg-neutral/10 rounded w-1/3" />
+                      <div className="h-1.5 bg-neutral/10 rounded-full" />
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : teamAnalytics.length === 0 ? (
+              <p className="text-neutral/50 text-xs text-center py-8">No team data</p>
+            ) : (
+              <div className="space-y-4">
+                {teamAnalytics.map((m) => {
+                  const maxLeads = (teamAnalytics[0]?.stats.assignedLeads) || 1;
+                  const { assignedLeads, openLeads, convertedLeads, followupDue, assignedClients, winRate } = m.stats;
+                  return (
+                    <div key={m.id}>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0">
+                          <span className="text-primary font-bold font-display text-[10px]">
+                            {m.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <span className="text-primary text-xs font-semibold truncate">{m.name}</span>
+                            <span className={`text-[11px] font-bold flex-shrink-0 ml-2 ${winRate >= 50 ? "text-secondary" : winRate >= 25 ? "text-primary" : "text-tertiary"}`}>
+                              {winRate}% win
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-neutral/10 rounded-full overflow-hidden mt-1">
+                            <div className="h-full bg-secondary rounded-full transition-all" style={{ width: `${Math.round((assignedLeads / maxLeads) * 100)}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-4 gap-1.5 ml-11">
+                        {[
+                          { label: "Assigned", value: assignedLeads },
+                          { label: "Open", value: openLeads },
+                          { label: "Converted", value: convertedLeads },
+                          { label: "Follow-up", value: followupDue },
+                        ].map(({ label, value }) => (
+                          <div key={label} className="bg-neutral-light rounded-xl px-2 py-1.5 text-center">
+                            <p className="font-display font-bold text-primary text-sm">{value}</p>
+                            <p className="text-neutral text-[9px] mt-0.5">{label}</p>
+                          </div>
+                        ))}
+                      </div>
+                      {assignedClients > 0 && (
+                        <p className="text-neutral text-[10px] ml-11 mt-1.5">{assignedClients} client{assignedClients !== 1 ? "s" : ""} assigned</p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Reminder channels */}
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
+        <div className={`bg-white rounded-2xl p-5 shadow-sm border border-neutral/8 ${!isAgency ? "lg:col-span-3" : ""}`}>
           <p className="font-display font-bold text-primary text-sm mb-1">Reminder Channels</p>
           <p className="text-neutral text-xs mb-4">How you follow up</p>
           {channelDist.length === 0 ? (

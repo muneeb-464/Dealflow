@@ -30,26 +30,33 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`;
 }
 
+function by(l: Lead) {
+  return l.createdByName ? ` · ${l.createdByName}` : "";
+}
+
 function leadToActivity(l: Lead) {
   const amount = `${l.currency} ${Number(l.amount).toLocaleString()}`;
   if (l.status === "Converted")
-    return { icon: "converted", dot: DOT.Converted!, title: "Lead converted",     desc: `${l.clientName} · ${amount}` };
+    return { icon: "converted", dot: DOT.Converted!, title: "Lead converted",     desc: `${l.clientName} · ${amount}${by(l)}` };
   if (l.status === "Follow-up")
-    return { icon: "followup",  dot: DOT["Follow-up"]!, title: "Follow-up needed", desc: `${l.clientName} · ${l.service}` };
+    return { icon: "followup",  dot: DOT["Follow-up"]!, title: "Follow-up needed", desc: `${l.clientName} · ${l.service}${by(l)}` };
   if (l.status === "Rejected")
-    return { icon: "rejected",  dot: DOT.Rejected!, title: "Lead rejected",       desc: `${l.clientName} · ${l.service}` };
+    return { icon: "rejected",  dot: DOT.Rejected!, title: "Lead rejected",       desc: `${l.clientName} · ${l.service}${by(l)}` };
   if (l.status === "Replied")
-    return { icon: "lead",      dot: DOT.Replied!, title: "Lead replied",          desc: `${l.clientName} · ${amount}` };
-  return { icon: "lead",        dot: DOT.Sent!, title: "New lead added",           desc: `${l.clientName} via ${l.platform}` };
+    return { icon: "lead",      dot: DOT.Replied!, title: "Lead replied",          desc: `${l.clientName} · ${amount}${by(l)}` };
+  return { icon: "lead",        dot: DOT.Sent!, title: "New lead added",           desc: `${l.clientName} via ${l.platform}${by(l)}` };
 }
 
 export default function ActivityFeed() {
   const leads = useLeadStore((s) => s.leads);
 
-  const activities = leads.slice(0, 6).map((l) => ({
-    ...leadToActivity(l),
-    time: timeAgo(l.sentAt),
-  }));
+  const activities = [...leads]
+    .sort((a, b) => new Date(b.updatedAt ?? b.sentAt).getTime() - new Date(a.updatedAt ?? a.sentAt).getTime())
+    .slice(0, 6)
+    .map((l) => ({
+      ...leadToActivity(l),
+      time: timeAgo(l.updatedAt ?? l.sentAt),
+    }));
 
   return (
     <div className="bg-white rounded-2xl p-5 shadow-sm border border-neutral/8">
