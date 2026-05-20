@@ -2,6 +2,7 @@
 import { useMemo, useEffect, useState } from "react";
 import Link from "next/link";
 import { useUser } from "@clerk/nextjs";
+import DemoBanner from "@/components/dashboard/DemoBanner";
 import { useLeadStore } from "@/store/leadStore";
 import { useClientStore } from "@/store/clientStore";
 import StatCard from "@/components/dashboard/StatCard";
@@ -115,6 +116,8 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-5">
+
+      <DemoBanner onLoaded={() => window.location.reload()} />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">

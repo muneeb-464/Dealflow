@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useAuthStore } from "@/store/authStore";
 import AccessGate from "@/components/layout/AccessGate";
+import DeleteDemoButton from "@/components/dashboard/DeleteDemoButton";
 
 // ── Types ─────────────────────────────────────────────────────────────
 type Section = "profile" | "freelancer" | "workspace" | "notifications" | "billing" | "security" | "danger";
@@ -514,6 +515,16 @@ function DangerSection() {
 
       <SectionCard title="Danger Zone" desc="These actions are permanent and cannot be undone.">
         <div className="space-y-3">
+
+          {/* Demo data deletion */}
+          <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-neutral/10 bg-neutral-light">
+            <div>
+              <p className="text-primary text-sm font-semibold">Demo Data</p>
+              <p className="text-neutral text-xs mt-0.5">Remove all sample leads and clients loaded during onboarding.</p>
+            </div>
+            <DeleteDemoButton />
+          </div>
+
           <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-neutral/10 bg-neutral-light">
             <div>
               <p className="text-primary text-sm font-semibold">Export All Data</p>

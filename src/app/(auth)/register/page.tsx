@@ -450,8 +450,7 @@ function RegisterContent() {
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-primary uppercase tracking-wider">Phone Number</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral text-sm">+</span>
-                      <input type="tel" value={businessPhone} onChange={e => setBusinessPhone(e.target.value)} placeholder="92 300 1234567" className={fieldClass(!!errors.businessPhone) + " pl-7"} />
+                      <input type="tel" value={businessPhone} onChange={e => setBusinessPhone(e.target.value)} placeholder="+ 92 300 1234567" className={fieldClass(!!errors.businessPhone) + " pl-7"} />
                     </div>
                     {errors.businessPhone && <p className="text-xs text-tertiary">{errors.businessPhone}</p>}
                   </div>

@@ -36,6 +36,7 @@ export interface IClient extends Document {
   notes?: string;
 
   orders: IOrder[];        // embedded sub-documents
+  isDemoData: boolean;
 
   createdAt: Date;
   updatedAt: Date;
@@ -76,6 +77,7 @@ const ClientSchema = new Schema<IClient>(
     notes: { type: String },
 
     orders: [OrderSchema],
+    isDemoData: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );

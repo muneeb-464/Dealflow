@@ -6,6 +6,7 @@ export interface IUser extends Document {
   name: string;
   avatar?: string;
   activeWorkspaceId?: mongoose.Types.ObjectId;
+  hasDemoData: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,6 +18,7 @@ const UserSchema = new Schema<IUser>(
     name: { type: String, required: true, trim: true },
     avatar: { type: String },
     activeWorkspaceId: { type: Schema.Types.ObjectId, ref: "Workspace" },
+    hasDemoData: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

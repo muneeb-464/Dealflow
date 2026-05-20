@@ -31,6 +31,8 @@ export interface ILead extends Document {
   lastFollowUpAt?: Date;
   nextFollowUpAt?: Date;       // set by cron after 48h no reply
 
+  isDemoData: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +66,7 @@ const LeadSchema = new Schema<ILead>(
     followUpCount: { type: Number, default: 0 },
     lastFollowUpAt: { type: Date },
     nextFollowUpAt: { type: Date, index: true },  // indexed for cron query
+    isDemoData: { type: Boolean, default: false, index: true },
   },
   { timestamps: true }
 );
