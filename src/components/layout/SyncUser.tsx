@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 
 const POLL_INTERVAL_MS = 30_000;
+const MAX_RETRIES = 3;
 
 export default function SyncUser() {
   const { isSignedIn } = useAuth();
@@ -17,30 +18,37 @@ export default function SyncUser() {
   useEffect(() => {
     if (!isSignedIn) return;
 
-    const sync = async () => {
+    const sync = async (attempt = 1) => {
       if (removedRef.current) return;
 
       const syncRes = await fetch("/api/auth/sync", { method: "POST" }).catch(() => null);
       const syncData = await syncRes?.json().catch(() => null);
 
-      if (syncData?.user) {
-        const { id, name, email, avatar, role } = syncData.user;
-        setAuth("clerk-session", { id, name, email, avatar, role: role ?? "employee" });
+      // Sync failed — retry up to MAX_RETRIES before giving up
+      if (!syncRes?.ok || !syncData?.user) {
+        if (attempt < MAX_RETRIES) {
+          setTimeout(() => sync(attempt + 1), 1500 * attempt);
+        } else {
+          // All retries exhausted — mark synced so RoleGuard doesn't block forever
+          setSynced();
+        }
+        return;
       }
 
-      // Mark sync as done regardless of outcome so RoleGuard can proceed
+      const { id, name, email, avatar, role } = syncData.user;
+      setAuth("clerk-session", { id, name, email, avatar, role: role ?? "employee" });
       setSynced();
 
-      // No active workspace — removed from workspace or never set up
-      if (syncData?.user && !syncData.user.activeWorkspaceId) {
+      // No active workspace — removed or never set up
+      if (!syncData.user.activeWorkspaceId) {
         removedRef.current = true;
         clearAuth();
         router.replace("/workspace-setup?reason=removed");
         return;
       }
 
-      // Agency users without workspace: redirect to setup
-      if (syncData?.user?.accountType !== "freelancer") {
+      // Agency users without workspace
+      if (syncData.user.accountType !== "freelancer") {
         const wsRes = await fetch("/api/workspace").catch(() => null);
         if (wsRes?.ok) {
           const wsData = await wsRes.json().catch(() => null);
@@ -50,9 +58,9 @@ export default function SyncUser() {
     };
 
     sync();
-    const interval = setInterval(sync, POLL_INTERVAL_MS);
+    const interval = setInterval(() => sync(), POLL_INTERVAL_MS);
     return () => clearInterval(interval);
-  }, [isSignedIn, router, setAuth, clearAuth]);
+  }, [isSignedIn, router, setAuth, clearAuth, setSynced]);
 
   return null;
 }
