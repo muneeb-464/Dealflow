@@ -26,9 +26,10 @@ interface RealMember {
 }
 
 const ROLE_CLS: Record<UserRole, string> = {
-  owner:    "bg-primary text-white",
-  manager:  "bg-secondary/15 text-primary",
-  employee: "bg-neutral/15 text-neutral",
+  owner:        "bg-primary text-white",
+  manager:      "bg-secondary/15 text-primary",
+  employee:     "bg-neutral/15 text-neutral",
+  invite_guest: "bg-neutral/10 text-neutral",
 };
 
 function getInitials(name: string) {
