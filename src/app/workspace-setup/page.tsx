@@ -1,7 +1,7 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useUser } from "@clerk/nextjs";
+import { useUser, useAuth } from "@clerk/nextjs";
 import Link from "next/link";
 
 const CURRENCIES = ["USD", "PKR", "EUR", "GBP", "AED", "CAD", "AUD"] as const;
@@ -22,11 +22,20 @@ function WorkspaceSetupContent() {
   const { user } = useUser();
   const removed = searchParams.get("reason") === "removed";
 
+  const { isSignedIn } = useAuth();
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState<string>("USD");
   const [timezone, setTimezone] = useState("Asia/Karachi");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [synced, setSynced] = useState(false);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
+    fetch("/api/auth/sync", { method: "POST" })
+      .then((r) => r.ok ? setSynced(true) : setError("Failed to sync account. Please refresh."))
+      .catch(() => setError("Failed to sync account. Please refresh."));
+  }, [isSignedIn]);
 
   const initials = user?.fullName
     ? user.fullName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -35,10 +44,10 @@ function WorkspaceSetupContent() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) { setError("Workspace name is required."); return; }
+    if (!synced) { setError("Account not synced yet. Please wait a moment and try again."); return; }
     setError("");
     setLoading(true);
     try {
-      await fetch("/api/auth/sync", { method: "POST" });
       const res = await fetch("/api/workspace", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
