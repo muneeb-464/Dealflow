@@ -1,10 +1,11 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 type Role = "owner" | "manager" | "employee" | "invite_guest";
 
 interface AuthStore {
   isAuthenticated: boolean;
-  isSynced: boolean; // true after first sync completes (success or fail)
+  isSynced: boolean;
   token: string | null;
   user: {
     id: string;
@@ -18,12 +19,20 @@ interface AuthStore {
   setSynced: () => void;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  isAuthenticated: false,
-  isSynced: false,
-  token: null,
-  user: null,
-  setAuth: (token, user) => set({ isAuthenticated: true, token, user }),
-  clearAuth: () => set({ isAuthenticated: false, token: null, user: null }),
-  setSynced: () => set({ isSynced: true }),
-}));
+export const useAuthStore = create<AuthStore>()(
+  persist(
+    (set) => ({
+      isAuthenticated: false,
+      isSynced: false,
+      token: null,
+      user: null,
+      setAuth: (token, user) => set({ isAuthenticated: true, token, user }),
+      clearAuth: () => set({ isAuthenticated: false, token: null, user: null, isSynced: false }),
+      setSynced: () => set({ isSynced: true }),
+    }),
+    {
+      name: "dealflow-auth",
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+    }
+  )
+);
