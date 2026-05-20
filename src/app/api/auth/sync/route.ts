@@ -36,17 +36,18 @@ export async function POST() {
       }
       await user.save();
     } else {
-      // New user — create, handling duplicate email gracefully
-      try {
+      // No user with this clerkId — check if a user with this email already exists
+      // (e.g. account created via different auth method or previous session)
+      const existingByEmail = await User.findOne({ email });
+      if (existingByEmail) {
+        // Merge: take over that doc with the current clerkId
+        existingByEmail.clerkId = userId;
+        existingByEmail.name = name;
+        existingByEmail.avatar = avatar;
+        await existingByEmail.save();
+        user = existingByEmail;
+      } else {
         user = await User.create({ clerkId: userId, email, name, avatar });
-      } catch (createErr: unknown) {
-        const mongoErr = createErr as { code?: number };
-        if (mongoErr?.code === 11000) {
-          // Email already exists on another account — create with a tagged email
-          user = await User.create({ clerkId: userId, email: `${userId}+${email}`, name, avatar });
-        } else {
-          throw createErr;
-        }
       }
     }
 
@@ -74,6 +75,9 @@ export async function POST() {
       user.activeWorkspaceId = workspace._id;
       await user.save();
     }
+
+    // Clean up any orphan tagged-email docs created by old E11000 fallback
+    await User.deleteMany({ email: new RegExp(`^${userId}\\+`), clerkId: { $ne: userId } });
 
     let member = null;
     if (user.activeWorkspaceId) {
