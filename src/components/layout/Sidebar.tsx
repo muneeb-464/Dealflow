@@ -1,8 +1,11 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { useAuthStore } from "@/store/authStore";
 import { useIsAgency } from "@/hooks/useIsAgency";
+import updateLogo from "@/components/landing/assests/update logo.png";
 import WorkspaceSwitcher from "@/components/layout/WorkspaceSwitcher";
 
 const navItems = [
@@ -74,7 +77,12 @@ function NavIcon({ path, active }: { path: string; active: boolean }) {
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const user = useAuthStore((s) => s.user);
+  const storeUser = useAuthStore((s) => s.user);
+  const { user: clerkUser } = useUser();
+
+  const displayName = storeUser?.name || clerkUser?.fullName || clerkUser?.username || null;
+  const displayAvatar = storeUser?.avatar || clerkUser?.imageUrl || null;
+  const user = storeUser;
   const role = user?.role ?? "employee";
   const isAgency = useIsAgency();
 
@@ -93,11 +101,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-5 pt-6 pb-4 flex-shrink-0">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-secondary/15 border border-secondary/25 flex items-center justify-center flex-shrink-0">
-            <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-secondary" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
-          </div>
+          <Image src={updateLogo} alt="Dealflow" width={32} height={32} className="object-contain flex-shrink-0" />
           <span className="font-display font-bold text-base tracking-tight text-white">DEAL<span className="text-secondary">FLOW</span></span>
         </Link>
       </div>
@@ -151,18 +155,18 @@ export default function Sidebar() {
         {/* User profile */}
         <div className="flex items-center gap-3 px-2 py-2.5 mt-1 rounded-xl hover:bg-white/5 transition-colors cursor-pointer">
           <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center flex-shrink-0 overflow-hidden">
-            {user?.avatar ? (
-              <img src={user.avatar} alt={user.name ?? ""} className="w-full h-full object-cover" />
+            {displayAvatar ? (
+              <img src={displayAvatar} alt={displayName ?? ""} className="w-full h-full object-cover" />
             ) : (
               <span className="text-primary text-xs font-bold font-display">
-                {user?.name ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : <span className="w-3 h-1.5 bg-primary/30 rounded animate-pulse inline-block" />}
+                {displayName ? displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase() : <span className="w-3 h-1.5 bg-primary/30 rounded animate-pulse inline-block" />}
               </span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            {user?.name ? (
+            {displayName ? (
               <>
-                <p className="text-white text-xs font-semibold truncate">{user.name}</p>
+                <p className="text-white text-xs font-semibold truncate">{displayName}</p>
                 <p className="text-white/35 text-[10px] truncate capitalize">{role}</p>
               </>
             ) : (

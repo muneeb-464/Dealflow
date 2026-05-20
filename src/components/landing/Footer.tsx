@@ -1,7 +1,12 @@
 import Image from "next/image";
 import updateLogo from "./assests/update logo.png";
 
-const productLinks = ["Features", "Pricing", "How It Works", "Changelog"];
+const productLinks = [
+  { label: "Features", href: "/#features" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "How It Works", href: "/#how-it-works" },
+  { label: "Changelog", href: "#" },
+];
 const companyLinks = [
   { label: "About", href: "/about" },
   { label: "Blog", href: "/blog" },
@@ -57,8 +62,8 @@ export default function Footer() {
               <p className="text-white/30 text-xs font-semibold uppercase tracking-wider mb-4">Product</p>
               <ul className="space-y-3">
                 {productLinks.map((l) => (
-                  <li key={l}>
-                    <a href="#" className="text-white/50 text-sm hover:text-white transition-colors block">{l}</a>
+                  <li key={l.label}>
+                    <a href={l.href} className="text-white/50 text-sm hover:text-white transition-colors block">{l.label}</a>
                   </li>
                 ))}
               </ul>

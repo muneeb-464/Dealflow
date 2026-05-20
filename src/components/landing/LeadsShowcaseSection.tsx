@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -77,12 +78,12 @@ export default function LeadsShowcaseSection() {
               ))}
             </ul>
 
-            <button className="group mt-2 inline-flex items-center gap-2 bg-primary text-secondary font-semibold text-sm px-7 py-3.5 rounded-full transition-all duration-300 hover:bg-secondary hover:text-primary hover:shadow-xl hover:shadow-secondary/30 hover:scale-105 active:scale-100">
+            <Link href="/dashboard" className="group mt-2 inline-flex items-center gap-2 bg-primary text-secondary font-semibold text-sm px-7 py-3.5 rounded-full transition-all duration-300 hover:bg-secondary hover:text-primary hover:shadow-xl hover:shadow-secondary/30 hover:scale-105 active:scale-100">
               Start Tracking Leads
               <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" stroke="currentColor" strokeWidth={2.5}>
                 <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </button>
+            </Link>
           </div>
 
           {/* Right — UI mockup */}
@@ -92,9 +93,9 @@ export default function LeadsShowcaseSection() {
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <p className="font-display font-bold text-white text-sm">Lead Pipeline</p>
-                <button className="bg-secondary/15 text-secondary text-xs px-3 py-1.5 rounded-full font-semibold transition-all duration-300 hover:bg-secondary hover:text-primary hover:shadow-lg hover:shadow-secondary/25 hover:scale-105 active:scale-100">
+                <Link href="/leads" className="bg-secondary/15 text-secondary text-xs px-3 py-1.5 rounded-full font-semibold transition-all duration-300 hover:bg-secondary hover:text-primary hover:shadow-lg hover:shadow-secondary/25 hover:scale-105 active:scale-100">
                   + Add Lead
-                </button>
+                </Link>
               </div>
 
               {/* Stats row */}

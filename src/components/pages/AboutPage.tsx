@@ -1,31 +1,9 @@
 "use client";
+import Link from "next/link";
 import Image from "next/image";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import img1 from "@/components/assets/munib.jpeg";
-import img2 from "@/components/assets/men 2.jpg";
-import img3 from "@/components/assets/men 3.jpg";
-
-const team = [
-  {
-    name: "Muneeb Sajjad",
-    role: "Founder & CEO",
-    bio: "Freelancer turned SaaS founder. Built Dealflow to fix the chaos of managing clients across 5 spreadsheets.",
-    img: img1,
-  },
-  {
-    name: "Ali Hassan",
-    role: "Head of Product",
-    bio: "Ex-agency PM. Obsessed with workflows that actually get out of your way.",
-    img: img2,
-  },
-  {
-    name: "Sara Khan",
-    role: "Lead Engineer",
-    bio: "Full-stack engineer who believes great software feels invisible.",
-    img: img3,
-  },
-];
 
 const values = [
   {
@@ -92,12 +70,12 @@ export default function AboutPage() {
                 Dealflow started as a personal tool to stop losing track of client conversations, proposals, and follow-ups. Now it helps hundreds of freelancers and agencies do the same.
               </p>
               <div className="flex items-center gap-3 flex-wrap">
-                <button className="group inline-flex items-center gap-2 bg-secondary text-primary px-7 py-3.5 rounded-full font-semibold text-sm shadow-lg shadow-secondary/30 transition-all duration-300 hover:bg-white hover:text-primary hover:shadow-xl hover:scale-105 active:scale-100">
+                <Link href="/dashboard" className="group inline-flex items-center gap-2 bg-secondary text-primary px-7 py-3.5 rounded-full font-semibold text-sm shadow-lg shadow-secondary/30 transition-all duration-300 hover:bg-white hover:text-primary hover:shadow-xl hover:scale-105 active:scale-100">
                   Get Started Free
                   <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" stroke="currentColor" strokeWidth={2.5}>
                     <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
-                </button>
+                </Link>
                 <a href="/contact" className="group inline-flex items-center gap-2 text-white/60 text-sm font-medium transition-all duration-300 hover:text-secondary px-2">
                   Talk to us →
                 </a>
@@ -227,56 +205,80 @@ export default function AboutPage() {
               <span className="text-secondary">✦</span> The Team
             </div>
             <h2 className="font-display font-bold text-primary text-4xl">People behind Dealflow</h2>
-            <p className="text-neutral mt-3 max-w-md mx-auto text-sm">Small team, high standards. We ship fast and care deeply about the product.</p>
+            <p className="text-neutral mt-3 max-w-md mx-auto text-sm">Built by a freelancer, for freelancers.</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {team.map((m) => (
-              <div
-                key={m.name}
-                className="group rounded-3xl overflow-hidden border border-neutral/10 bg-neutral-light cursor-default transition-all duration-300 hover:-translate-y-2"
-                onMouseEnter={e => {
-                  e.currentTarget.style.boxShadow = "0 24px 64px -8px rgba(74,222,128,0.35)";
-                  e.currentTarget.style.borderColor = "rgba(74,222,128,0.4)";
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.boxShadow = "";
-                  e.currentTarget.style.borderColor = "";
-                }}
-              >
-                {/* Photo */}
-                <div className="relative h-56 w-full bg-primary overflow-hidden">
-                  <Image src={m.img} alt={m.name} fill className="object-cover object-top opacity-90 group-hover:scale-105 transition-transform duration-500" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent" />
-                  <div className="absolute bottom-4 left-5">
-                    <span className="text-secondary text-xs font-bold bg-secondary/20 border border-secondary/30 px-2.5 py-1 rounded-full">{m.role}</span>
-                  </div>
-                </div>
-                {/* Info */}
-                <div className="p-6">
-                  <p className="font-display font-bold text-primary text-base mb-2">{m.name}</p>
-                  <p className="text-neutral text-sm leading-relaxed">{m.bio}</p>
+
+          {/* Single founder — featured card */}
+          <div className="max-w-3xl mx-auto">
+            <div
+              className="group bg-neutral-light rounded-3xl overflow-hidden border border-neutral/10 cursor-default transition-all duration-300 hover:-translate-y-1 grid grid-cols-1 md:grid-cols-2"
+              onMouseEnter={e => {
+                e.currentTarget.style.boxShadow = "0 24px 64px -8px rgba(74,222,128,0.3)";
+                e.currentTarget.style.borderColor = "rgba(74,222,128,0.35)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.boxShadow = "";
+                e.currentTarget.style.borderColor = "";
+              }}
+            >
+              {/* Photo */}
+              <div className="relative h-72 md:h-auto bg-primary overflow-hidden">
+                <Image src={img1} alt="Muneeb Sajjad" fill className="object-cover object-top opacity-90 group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-primary/50 to-transparent" />
+                <div className="absolute bottom-5 left-5">
+                  <span className="text-secondary text-xs font-bold bg-secondary/20 border border-secondary/30 px-3 py-1.5 rounded-full">Founder & CEO</span>
                 </div>
               </div>
-            ))}
+
+              {/* Info */}
+              <div className="p-8 flex flex-col justify-center gap-5">
+                <div>
+                  <p className="font-display font-bold text-primary text-2xl mb-1">Muneeb Sajjad</p>
+                  <p className="text-secondary text-sm font-semibold">Founder & CEO</p>
+                </div>
+                <p className="text-neutral text-sm leading-relaxed">
+                  Freelancer turned SaaS founder. Built Dealflow to fix the chaos of managing clients across 5 spreadsheets — a problem every freelancer knows too well.
+                </p>
+                <div className="flex flex-col gap-2">
+                  {[
+                    "5+ years freelancing experience",
+                    "Built Dealflow from scratch",
+                    "Remote-first, customer-obsessed",
+                  ].map((item) => (
+                    <div key={item} className="flex items-center gap-2.5">
+                      <div className="w-4 h-4 rounded-full bg-secondary/15 flex items-center justify-center flex-shrink-0">
+                        <svg viewBox="0 0 24 24" fill="none" className="w-2.5 h-2.5 text-secondary" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </div>
+                      <span className="text-primary text-xs font-medium">{item}</span>
+                    </div>
+                  ))}
+                </div>
+                <a href="/contact" className="inline-flex items-center gap-2 text-secondary text-sm font-semibold hover:underline w-fit">
+                  Say hello →
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* ── CTA ── */}
       <section className="bg-primary px-6 lg:px-12 py-24 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 100%, rgba(74,222,128,0.1) 0%, transparent 60%)" }} />
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 30%, rgba(74,222,128,0.1) 0%, transparent 60%)" }} />
         <div className="relative z-10 max-w-2xl mx-auto text-center">
           <h2 className="font-display font-bold text-white text-4xl lg:text-5xl mb-4">
             Ready to take control<br />of your <span className="text-secondary">pipeline?</span>
           </h2>
           <p className="text-white/50 text-base mb-8">Join 500+ freelancers and agencies who use Dealflow to close more deals.</p>
           <div className="flex items-center justify-center gap-3 flex-wrap">
-            <button className="group inline-flex items-center gap-2 bg-secondary text-primary px-7 py-3.5 rounded-full font-semibold text-sm shadow-lg shadow-secondary/30 transition-all duration-300 hover:bg-white hover:shadow-xl hover:scale-105 active:scale-100">
+            <Link href="/dashboard" className="group inline-flex items-center gap-2 bg-secondary text-primary px-7 py-3.5 rounded-full font-semibold text-sm shadow-lg shadow-secondary/30 transition-all duration-300 hover:bg-white hover:shadow-xl hover:scale-105 active:scale-100">
               Start for Free
               <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" stroke="currentColor" strokeWidth={2.5}>
                 <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </button>
+            </Link>
             <a href="/pricing" className="inline-flex items-center gap-2 text-white/60 text-sm font-medium hover:text-secondary transition-colors px-2">
               View Pricing →
             </a>

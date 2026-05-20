@@ -149,8 +149,7 @@ export async function GET() {
     await connectDB();
 
     const user = await User.findOne({ clerkId: userId });
-    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
-    if (!user.activeWorkspaceId) return NextResponse.json({ workspace: null });
+    if (!user || !user.activeWorkspaceId) return NextResponse.json({ workspace: null });
 
     const workspace = await Workspace.findById(user.activeWorkspaceId);
     return NextResponse.json({ workspace });

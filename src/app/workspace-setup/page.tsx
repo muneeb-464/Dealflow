@@ -29,12 +29,15 @@ function WorkspaceSetupContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [synced, setSynced] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     if (!isSignedIn) return;
+    setSyncing(true);
     fetch("/api/auth/sync", { method: "POST" })
-      .then((r) => r.ok ? setSynced(true) : setError("Failed to sync account. Please refresh."))
-      .catch(() => setError("Failed to sync account. Please refresh."));
+      .then((r) => { if (r.ok) setSynced(true); })
+      .catch(() => {})
+      .finally(() => setSyncing(false));
   }, [isSignedIn]);
 
   const initials = user?.fullName
@@ -44,9 +47,19 @@ function WorkspaceSetupContent() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) { setError("Workspace name is required."); return; }
-    if (!synced) { setError("Account not synced yet. Please wait a moment and try again."); return; }
     setError("");
     setLoading(true);
+
+    // If background sync hasn't completed, run it inline now
+    if (!synced) {
+      const r = await fetch("/api/auth/sync", { method: "POST" }).catch(() => null);
+      if (!r?.ok) {
+        setError("Failed to sync account. Please refresh the page.");
+        setLoading(false);
+        return;
+      }
+      setSynced(true);
+    }
     try {
       const res = await fetch("/api/workspace", {
         method: "POST",
@@ -172,10 +185,10 @@ function WorkspaceSetupContent() {
 
             <button
               type="submit"
-              disabled={loading || !name.trim()}
+              disabled={loading || syncing || !name.trim()}
               className="w-full py-3.5 bg-primary text-white font-semibold text-sm rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {loading ? "Creating workspace..." : "Create workspace & continue"}
+              {syncing ? "Syncing account..." : loading ? "Creating workspace..." : "Create workspace & continue"}
             </button>
           </form>
 

@@ -17,19 +17,40 @@ export async function POST() {
 
     await connectDB();
 
-    const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
-    const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || email;
+    const email = clerkUser.emailAddresses[0]?.emailAddress || `${userId}@clerk.local`;
+    const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || clerkUser.username || email;
     const avatar = clerkUser.imageUrl;
     const accountType = (clerkUser.unsafeMetadata?.accountType as string) ?? "freelancer";
 
-    // Upsert user
-    const user = await User.findOneAndUpdate(
-      { clerkId: userId },
-      { $set: { email, name, avatar } },
-      { upsert: true, new: true, runValidators: true }
-    );
+    // Find or create user — explicit flow avoids upsert E11000 issues
+    let user = await User.findOne({ clerkId: userId });
 
-    // Auto-create workspace for freelancers if they don't have one
+    if (user) {
+      // Update profile fields
+      user.name = name;
+      user.avatar = avatar;
+      // Only update email if it changed and isn't taken by another account
+      if (user.email !== email && email) {
+        const emailTaken = await User.findOne({ email, clerkId: { $ne: userId } }).lean();
+        if (!emailTaken) user.email = email;
+      }
+      await user.save();
+    } else {
+      // New user — create, handling duplicate email gracefully
+      try {
+        user = await User.create({ clerkId: userId, email, name, avatar });
+      } catch (createErr: unknown) {
+        const mongoErr = createErr as { code?: number };
+        if (mongoErr?.code === 11000) {
+          // Email already exists on another account — create with a tagged email
+          user = await User.create({ clerkId: userId, email: `${userId}+${email}`, name, avatar });
+        } else {
+          throw createErr;
+        }
+      }
+    }
+
+    // Auto-create workspace for freelancers on first login
     if (accountType === "freelancer" && !user.activeWorkspaceId) {
       const workspaceName = `${name}'s Workspace`;
       let slug = toSlug(workspaceName);
@@ -54,9 +75,16 @@ export async function POST() {
       await user.save();
     }
 
-    const member = user.activeWorkspaceId
-      ? await WorkspaceMember.findOne({ workspaceId: user.activeWorkspaceId, userId: user._id }).lean()
-      : null;
+    let member = null;
+    if (user.activeWorkspaceId) {
+      member = await WorkspaceMember.findOne({ workspaceId: user.activeWorkspaceId, userId: user._id }).lean();
+
+      // User was removed from workspace — clear their activeWorkspaceId
+      if (!member) {
+        user.activeWorkspaceId = undefined;
+        await user.save();
+      }
+    }
 
     return NextResponse.json({
       user: {
@@ -71,7 +99,12 @@ export async function POST() {
       },
     });
   } catch (err) {
-    console.error("[POST /api/auth/sync]", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    const e = err as { message?: string; code?: number; stack?: string };
+    console.error("[POST /api/auth/sync] code:", e?.code, "message:", e?.message, "\n", e?.stack ?? err);
+    return NextResponse.json({
+      error: "Internal server error",
+      detail: e?.message,
+      code: e?.code,
+    }, { status: 500 });
   }
 }

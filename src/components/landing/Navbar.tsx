@@ -2,6 +2,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useUser, useClerk } from "@clerk/nextjs";
 import updateLogo from "./assests/update logo.png";
 
@@ -20,6 +21,15 @@ export default function Navbar() {
   const [dashOpen, setDashOpen] = useState(false);
   const { isSignedIn, user } = useUser();
   const { signOut } = useClerk();
+  const pathname = usePathname();
+
+  const scrollTo = (sectionId: string) => {
+    if (pathname === "/") {
+      document.getElementById(sectionId)?.scrollIntoView({ behavior: "smooth" });
+    } else {
+      window.location.href = `/#${sectionId}`;
+    }
+  };
 
   const initials = user?.fullName
     ? user.fullName.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
@@ -33,9 +43,9 @@ export default function Navbar() {
 
         {/* Desktop left links */}
         <div className="hidden lg:flex items-center gap-7">
-          <button onClick={() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })} className="text-sm text-neutral hover:text-primary transition-colors font-medium">Services</button>
-          <button onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })} className="text-sm text-neutral hover:text-primary transition-colors font-medium">How it works</button>
-          <button onClick={() => document.getElementById("footer")?.scrollIntoView({ behavior: "smooth" })} className="text-sm text-neutral hover:text-primary transition-colors font-medium">About us</button>
+          <button onClick={() => scrollTo("features")} className="text-sm text-neutral hover:text-primary transition-colors font-medium">Services</button>
+          <button onClick={() => scrollTo("how-it-works")} className="text-sm text-neutral hover:text-primary transition-colors font-medium">How it works</button>
+          <button onClick={() => scrollTo("footer")} className="text-sm text-neutral hover:text-primary transition-colors font-medium">About us</button>
         </div>
 
         {/* Logo — centered on desktop, left on mobile */}

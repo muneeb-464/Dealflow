@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -121,9 +122,9 @@ export default function PricingSection() {
               ))}
             </ul>
 
-            <button className="group/btn mt-8 w-full py-3.5 bg-primary text-secondary font-semibold rounded-full transition-all duration-300 hover:bg-secondary hover:text-primary hover:shadow-lg hover:shadow-secondary/25 hover:scale-[1.02] active:scale-100">
+            <Link href="/dashboard" className="group/btn mt-8 w-full py-3.5 bg-primary text-secondary font-semibold rounded-full transition-all duration-300 hover:bg-secondary hover:text-primary hover:shadow-lg hover:shadow-secondary/25 hover:scale-[1.02] active:scale-100 block text-center">
               Get Started Free
-            </button>
+            </Link>
           </div>
 
           {/* Pro plan */}
@@ -155,9 +156,9 @@ export default function PricingSection() {
               ))}
             </ul>
 
-            <button className="group/btn mt-8 w-full py-3.5 bg-secondary text-primary font-bold rounded-full transition-all duration-300 hover:bg-white hover:text-primary hover:shadow-xl hover:shadow-secondary/30 hover:scale-[1.02] active:scale-100">
+            <Link href="/dashboard" className="group/btn mt-8 w-full py-3.5 bg-secondary text-primary font-bold rounded-full transition-all duration-300 hover:bg-white hover:text-primary hover:shadow-xl hover:shadow-secondary/30 hover:scale-[1.02] active:scale-100 block text-center">
               Start Pro Trial
-            </button>
+            </Link>
           </div>
 
         </div>

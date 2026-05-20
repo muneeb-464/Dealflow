@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import loginSvg from "../../assets/login.svg";
+import updateLogo from "@/components/landing/assests/update logo.png";
 
 function LoginContent() {
   const { signIn, fetchStatus } = useSignIn();
@@ -81,11 +82,7 @@ function LoginContent() {
         <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full pointer-events-none" style={{ background: "radial-gradient(circle, rgba(74,222,128,0.12) 0%, transparent 70%)" }} />
 
         <Link href="/" className="relative z-10 flex items-center gap-2.5 flex-shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-secondary/15 border border-secondary/25 flex items-center justify-center">
-            <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-secondary" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-            </svg>
-          </div>
+          <Image src={updateLogo} alt="Dealflow" width={36} height={36} className="object-contain flex-shrink-0" />
           <span className="font-display font-bold text-xl tracking-tight text-white">DEAL<span className="text-secondary">FLOW</span></span>
         </Link>
 
@@ -119,11 +116,7 @@ function LoginContent() {
         <div className="w-full max-w-md">
 
           <Link href="/" className="flex items-center gap-2 mb-10 lg:hidden">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-secondary" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
-            </div>
+            <Image src={updateLogo} alt="Dealflow" width={32} height={32} className="object-contain flex-shrink-0" />
             <span className="font-display font-bold text-lg tracking-tight text-primary">DEAL<span className="text-secondary">FLOW</span></span>
           </Link>
 

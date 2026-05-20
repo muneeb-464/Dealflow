@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -62,12 +63,12 @@ export default function CTASection() {
 
         {/* Buttons */}
         <div className="flex items-center gap-4 flex-wrap justify-center">
-          <button className="group inline-flex items-center gap-2 bg-secondary text-primary font-bold px-8 py-4 rounded-full text-sm shadow-lg shadow-secondary/20 transition-all duration-300 hover:bg-white hover:shadow-xl hover:shadow-secondary/25 hover:scale-105 active:scale-100">
+          <Link href="/dashboard" className="group inline-flex items-center gap-2 bg-secondary text-primary font-bold px-8 py-4 rounded-full text-sm shadow-lg shadow-secondary/20 transition-all duration-300 hover:bg-white hover:shadow-xl hover:shadow-secondary/25 hover:scale-105 active:scale-100">
             Get Started Free
             <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" stroke="currentColor" strokeWidth={2.5}>
               <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-          </button>
+          </Link>
           <button className="text-white/60 text-sm font-medium hover:text-white transition-colors px-4 py-4">
             Watch Demo ▶
           </button>

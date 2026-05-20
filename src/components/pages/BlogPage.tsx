@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
@@ -242,12 +243,12 @@ export default function BlogPage() {
                 <p className="font-display font-bold text-white text-sm">Ready to fix your pipeline?</p>
                 <p className="text-white/50 text-xs mt-0.5">Start tracking leads in Dealflow — free forever.</p>
               </div>
-              <button className="group flex-shrink-0 inline-flex items-center gap-2 bg-secondary text-primary px-5 py-2.5 rounded-full font-semibold text-xs shadow-lg shadow-secondary/30 transition-all duration-300 hover:bg-white hover:shadow-xl hover:scale-105 active:scale-100">
+              <Link href="/dashboard" className="group flex-shrink-0 inline-flex items-center gap-2 bg-secondary text-primary px-5 py-2.5 rounded-full font-semibold text-xs shadow-lg shadow-secondary/30 transition-all duration-300 hover:bg-white hover:shadow-xl hover:scale-105 active:scale-100">
                 Get Started Free
                 <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" stroke="currentColor" strokeWidth={2.5}>
                   <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
