@@ -155,13 +155,22 @@ export default function Sidebar() {
               <img src={user.avatar} alt={user.name ?? ""} className="w-full h-full object-cover" />
             ) : (
               <span className="text-primary text-xs font-bold font-display">
-                {user?.name ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : "?"}
+                {user?.name ? user.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() : <span className="w-3 h-1.5 bg-primary/30 rounded animate-pulse inline-block" />}
               </span>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white text-xs font-semibold truncate">{user?.name ?? "..."}</p>
-            <p className="text-white/35 text-[10px] truncate capitalize">{role}</p>
+            {user?.name ? (
+              <>
+                <p className="text-white text-xs font-semibold truncate">{user.name}</p>
+                <p className="text-white/35 text-[10px] truncate capitalize">{role}</p>
+              </>
+            ) : (
+              <>
+                <div className="h-2.5 w-20 bg-white/10 rounded animate-pulse mb-1" />
+                <div className="h-2 w-12 bg-white/10 rounded animate-pulse" />
+              </>
+            )}
           </div>
           {/* <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5 text-white/30 flex-shrink-0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 12 15 18 9" />
