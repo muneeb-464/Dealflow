@@ -17,15 +17,17 @@ export default function RoleGuard() {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const isSynced = useAuthStore((s) => s.isSynced);
   const role = user?.role ?? "employee";
 
   useEffect(() => {
+    if (!isSynced) return; // wait for first sync before making role decisions
     const segment = "/" + pathname.split("/").filter(Boolean)[0];
     const allowed = ROUTE_ROLES[segment];
     if (allowed && !allowed.includes(role)) {
       router.replace(`/access-denied?page=${segment.slice(1)}&role=${role}`);
     }
-  }, [pathname, role, router]);
+  }, [pathname, role, isSynced, router]);
 
   return null;
 }

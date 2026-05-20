@@ -11,6 +11,7 @@ export default function SyncUser() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const setSynced = useAuthStore((s) => s.setSynced);
   const removedRef = useRef(false);
 
   useEffect(() => {
@@ -26,6 +27,9 @@ export default function SyncUser() {
         const { id, name, email, avatar, role } = syncData.user;
         setAuth("clerk-session", { id, name, email, avatar, role: role ?? "employee" });
       }
+
+      // Mark sync as done regardless of outcome so RoleGuard can proceed
+      setSynced();
 
       // No active workspace — removed from workspace or never set up
       if (syncData?.user && !syncData.user.activeWorkspaceId) {

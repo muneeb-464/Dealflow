@@ -4,6 +4,7 @@ type Role = "owner" | "manager" | "employee" | "invite_guest";
 
 interface AuthStore {
   isAuthenticated: boolean;
+  isSynced: boolean; // true after first sync completes (success or fail)
   token: string | null;
   user: {
     id: string;
@@ -14,12 +15,15 @@ interface AuthStore {
   } | null;
   setAuth: (token: string, user: AuthStore["user"]) => void;
   clearAuth: () => void;
+  setSynced: () => void;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
   isAuthenticated: false,
+  isSynced: false,
   token: null,
   user: null,
   setAuth: (token, user) => set({ isAuthenticated: true, token, user }),
   clearAuth: () => set({ isAuthenticated: false, token: null, user: null }),
+  setSynced: () => set({ isSynced: true }),
 }));
