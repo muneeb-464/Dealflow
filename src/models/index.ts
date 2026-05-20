@@ -7,6 +7,7 @@ export { default as Client } from "./Client";
 export { default as Reminder } from "./Reminder";
 export { default as Revenue } from "./Revenue";
 export { default as ApprovalRequest } from "./ApprovalRequest";
+export { default as PageAccessGrant } from "./PageAccessGrant";
 
 export type { IUser } from "./User";
 export type { IWorkspace, WorkspacePlan, WorkspaceCurrency } from "./Workspace";
@@ -17,3 +18,4 @@ export type { IClient, ClientStatus, IOrder, OrderStatus } from "./Client";
 export type { IReminder, ReminderStatus, ReminderLinkedType } from "./Reminder";
 export type { IRevenue, RevenueType } from "./Revenue";
 export type { IApprovalRequest, ApprovalRequestType, ApprovalRequestStatus } from "./ApprovalRequest";
+export type { IPageAccessGrant, GrantablePage, GrantStatus } from "./PageAccessGrant";

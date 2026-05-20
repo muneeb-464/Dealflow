@@ -95,25 +95,9 @@ export default function Topbar() {
 
       <div className="flex-1" />
 
-      {/* Search — desktop */}
-      <div className="hidden lg:flex items-center gap-2 bg-neutral-light rounded-xl px-3 w-52">
-        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-neutral flex-shrink-0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <input
-          type="text"
-          placeholder="Search..."
-          className="bg-transparent text-sm text-primary placeholder:text-neutral/50 focus:outline-none py-2.5 w-full"
-        />
-      </div>
 
-      {/* Quick action button */}
-      <button className="hidden lg:flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3.5 py-2 rounded-xl hover:bg-primary/90 transition-colors flex-shrink-0">
-        <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-        New
-      </button>
+
+
 
       {/* Notifications */}
       <div className="relative">
@@ -194,13 +178,13 @@ export default function Topbar() {
             <div className="py-1.5">
               <p className="px-4 py-1 text-[10px] font-bold text-neutral/40 uppercase tracking-wider">Navigate</p>
               {[
-                { label: "Dashboard",  href: "/dashboard",  icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10" },
-                { label: "Leads",      href: "/leads",      icon: "M22 12h-4l-3 9L9 3l-3 9H2" },
-                { label: "Clients",    href: "/clients",    icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" },
-                { label: "Reminders",  href: "/reminders",  icon: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0" },
-                { label: "Revenue",    href: "/revenue",    icon: "M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" },
-                { label: "Analytics",  href: "/analytics",  icon: "M18 20V10 M12 20V4 M6 20v-6" },
-                { label: "Team",       href: "/team",       icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75", agencyOnly: true },
+                { label: "Dashboard", href: "/dashboard", icon: "M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z M9 22V12h6v10" },
+                { label: "Leads", href: "/leads", icon: "M22 12h-4l-3 9L9 3l-3 9H2" },
+                { label: "Clients", href: "/clients", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" },
+                { label: "Reminders", href: "/reminders", icon: "M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9 M13.73 21a2 2 0 0 1-3.46 0" },
+                { label: "Revenue", href: "/revenue", icon: "M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" },
+                { label: "Analytics", href: "/analytics", icon: "M18 20V10 M12 20V4 M6 20v-6" },
+                { label: "Team", href: "/team", icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M23 21v-2a4 4 0 0 0-3-3.87 M16 3.13a4 4 0 0 1 0 7.75", agencyOnly: true },
               ].filter((item) => !item.agencyOnly || accountType === "agency").map((item) => (
                 <Link
                   key={item.href}

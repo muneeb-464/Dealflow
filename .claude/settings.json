@@ -1,13 +1,16 @@
 {
   "permissions": {
     "allow": [
+      "Bash(*)",
+      "PowerShell(*)",
+      "PowerShell(New-Item*)",
+      "PowerShell(Set-Content*)",
+      "PowerShell(Remove-Item*)",
       "Edit(*)",
       "Write(*)",
-      "Bash(*)",
       "Read(*)",
       "Glob(*)",
       "Grep(*)",
-      "PowerShell(*)",
       "WebFetch(*)",
       "WebSearch(*)",
       "TodoWrite(*)",

@@ -1,11 +1,21 @@
 "use client";
 import { useState, useMemo, useCallback, useEffect } from "react";
+import AccessGate from "@/components/layout/AccessGate";
 import { useUser } from "@clerk/nextjs";
 import TeamMemberCard from "@/components/team/TeamMemberCard";
 import InviteMemberModal from "@/components/team/InviteMemberModal";
 import Link from "next/link";
 import type { WorkspaceMember, UserRole, PendingInvite } from "@/types/user";
 import type { InviteMemberDto } from "@/types/user";
+
+interface PageAccessRequest {
+  _id: string;
+  page: string;
+  status: string;
+  requestNote?: string;
+  createdAt: string;
+  userId: { _id: string; name: string; email: string };
+}
 
 interface ApprovalRequestItem {
   _id: string;
@@ -24,13 +34,14 @@ const APPROVAL_TYPE_LABEL: Record<string, string> = {
 
 const ROLE_FILTERS: (UserRole | "All")[] = ["All", "owner", "manager", "employee"];
 
-export default function TeamPage() {
+function TeamPageInner() {
   const { user: clerkUser } = useUser();
 
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [removedInvites, setRemovedInvites] = useState<PendingInvite[]>([]);
   const [approvalRequests, setApprovalRequests] = useState<ApprovalRequestItem[]>([]);
+  const [pageAccessRequests, setPageAccessRequests] = useState<PageAccessRequest[]>([]);
   const [winRateMap, setWinRateMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [noWorkspace, setNoWorkspace] = useState(false);
@@ -86,9 +97,19 @@ export default function TeamPage() {
     } catch { /* owner only — silently ignore for non-owners */ }
   }, []);
 
+  const fetchPageAccessRequests = useCallback(async () => {
+    try {
+      const res = await fetch("/api/workspace/page-access");
+      if (!res.ok) return;
+      const data = await res.json();
+      setPageAccessRequests((data.grants ?? []).filter((g: PageAccessRequest) => g.status === "pending"));
+    } catch { /* manager+ only */ }
+  }, []);
+
   useEffect(() => {
     fetchMembers();
     fetchApprovalRequests();
+    fetchPageAccessRequests();
     fetch("/api/workspace/analytics/team")
       .then((r) => r.json())
       .then((d) => {
@@ -192,6 +213,21 @@ export default function TeamPage() {
     await handleInvite({ name: "", email, role: role as "manager" | "employee" });
   };
 
+  const handlePageAccessReview = async (grantId: string, decision: "approved" | "rejected") => {
+    try {
+      const res = await fetch(`/api/workspace/page-access/${grantId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ decision }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      showToast(`Access ${decision}`, "success");
+      setPageAccessRequests((prev) => prev.filter((r) => r._id !== grantId));
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Failed to review", "error");
+    }
+  };
+
   const handleReviewRequest = async (requestId: string, decision: "approved" | "rejected", reviewNote?: string) => {
     try {
       const res = await fetch(`/api/workspace/approval-requests/${requestId}`, {
@@ -247,9 +283,9 @@ export default function TeamPage() {
           </Link>
           <div className="flex items-center gap-2">
             <h2 className="font-display font-bold text-primary text-xl">Team</h2>
-            {isOwner && approvalRequests.length > 0 && (
+            {isOwner && (approvalRequests.length + pageAccessRequests.length) > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-tertiary text-white text-[10px] font-bold animate-pulse">
-                {approvalRequests.length} pending
+                {approvalRequests.length + pageAccessRequests.length} pending
               </span>
             )}
           </div>
@@ -434,6 +470,45 @@ export default function TeamPage() {
         </div>
       )}
 
+      {/* Page access requests — owner/manager */}
+      {(isOwner || canInvite) && pageAccessRequests.length > 0 && (
+        <div className="bg-white rounded-2xl border border-secondary/20 shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <p className="font-display font-bold text-primary text-sm">Page Access Requests</p>
+            <span className="px-2 py-0.5 rounded-full bg-secondary text-primary text-[10px] font-bold">{pageAccessRequests.length}</span>
+          </div>
+          <div className="space-y-2">
+            {pageAccessRequests.map((req) => (
+              <div key={req._id} className="flex items-start gap-3 py-3 border-b border-neutral/8 last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-primary text-sm font-semibold">
+                    {req.userId?.name ?? "Unknown"}
+                    <span className="text-neutral font-normal"> wants access to </span>
+                    <span className="capitalize">{req.page}</span>
+                  </p>
+                  <p className="text-neutral text-xs mt-0.5">{req.userId?.email} · {new Date(req.createdAt).toLocaleDateString()}</p>
+                  {req.requestNote && <p className="text-neutral/70 text-xs mt-1 italic">&quot;{req.requestNote}&quot;</p>}
+                </div>
+                <div className="flex gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => handlePageAccessReview(req._id, "approved")}
+                    className="px-3 py-1.5 rounded-lg bg-secondary/10 text-secondary text-xs font-semibold hover:bg-secondary/20 transition-colors"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={() => handlePageAccessReview(req._id, "rejected")}
+                    className="px-3 py-1.5 rounded-lg bg-tertiary/10 text-tertiary text-xs font-semibold hover:bg-tertiary/20 transition-colors"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Approval requests — owner only */}
       {isOwner && approvalRequests.length > 0 && (
         <div className="bg-white rounded-2xl border border-tertiary/20 shadow-sm p-5">
@@ -479,6 +554,10 @@ export default function TeamPage() {
       />
     </div>
   );
+}
+
+export default function TeamPage() {
+  return <AccessGate page="team"><TeamPageInner /></AccessGate>;
 }
 
 // ── EditInviteModal ───────────────────────────────────────────────────────────

@@ -163,9 +163,9 @@ export default function Sidebar() {
             <p className="text-white text-xs font-semibold truncate">{user?.name ?? "Muneeb Ahmed"}</p>
             <p className="text-white/35 text-[10px] truncate capitalize">{role}</p>
           </div>
-          <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5 text-white/30 flex-shrink-0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          {/* <svg viewBox="0 0 24 24" fill="none" className="w-3.5 h-3.5 text-white/30 flex-shrink-0" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
             <polyline points="6 9 12 15 18 9" />
-          </svg>
+          </svg> */}
         </div>
       </div>
     </aside>

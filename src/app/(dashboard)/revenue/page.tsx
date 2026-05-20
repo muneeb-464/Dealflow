@@ -1,5 +1,6 @@
 "use client";
 import { useMemo } from "react";
+import AccessGate from "@/components/layout/AccessGate";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useClientStore } from "@/store/clientStore";
 import { useLeadStore } from "@/store/leadStore";
@@ -24,7 +25,7 @@ function TooltipContent({ active, payload, label }: any) {
   );
 }
 
-export default function RevenuePage() {
+function RevenuePageInner() {
   const clients = useClientStore((s) => s.clients);
   const clientsLoading = useClientStore((s) => s.loading);
   const leads = useLeadStore((s) => s.leads);
@@ -209,4 +210,8 @@ export default function RevenuePage() {
       </div>
     </div>
   );
+}
+
+export default function RevenuePage() {
+  return <AccessGate page="revenue"><RevenuePageInner /></AccessGate>;
 }

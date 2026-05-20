@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
+import AccessGate from "@/components/layout/AccessGate";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useLeadStore } from "@/store/leadStore";
 import { useClientStore } from "@/store/clientStore";
@@ -45,7 +46,7 @@ function PieTooltip({ active, payload }: any) {
   );
 }
 
-export default function AnalyticsPage() {
+function AnalyticsPageInner() {
   const { user: clerkUser } = useUser();
   const accountType = (clerkUser?.unsafeMetadata?.accountType as string) ?? "freelancer";
   const isAgency = accountType === "agency";
@@ -293,4 +294,8 @@ export default function AnalyticsPage() {
       </div>
     </div>
   );
+}
+
+export default function AnalyticsPage() {
+  return <AccessGate page="analytics"><AnalyticsPageInner /></AccessGate>;
 }

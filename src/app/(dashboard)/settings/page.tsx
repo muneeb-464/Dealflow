@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useAuthStore } from "@/store/authStore";
+import AccessGate from "@/components/layout/AccessGate";
 
 // ── Types ─────────────────────────────────────────────────────────────
 type Section = "profile" | "freelancer" | "workspace" | "notifications" | "billing" | "security" | "danger";
@@ -559,7 +560,7 @@ function DangerSection() {
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────
-export default function SettingsPage() {
+function SettingsPageInner() {
   const [active, setActive] = useState<Section>("profile");
 
   const authUser = useAuthStore((s) => s.user);
@@ -620,4 +621,8 @@ export default function SettingsPage() {
       </div>
     </div>
   );
+}
+
+export default function SettingsPage() {
+  return <AccessGate page="settings"><SettingsPageInner /></AccessGate>;
 }
