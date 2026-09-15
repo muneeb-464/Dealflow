@@ -8,7 +8,8 @@ import { FOLLOW_UP_AFTER_DAYS, FOLLOW_UP_STATUSES, MAX_FOLLOW_UPS } from "@/cons
  * GET /api/external/pipeline — read-only pipeline feed for Munib's Command Center.
  *
  * Auth: `Authorization: Bearer <DEALFLOW_API_TOKEN>` (not Clerk — the caller is a server).
- * Scope: the active workspace of the user with email DEALFLOW_API_USER_EMAIL. Demo data excluded.
+ * Scope: the active workspace of the user with email DEALFLOW_API_USER_EMAIL.
+ * Demo data is excluded unless `?demo=1` (for checking the layout before real leads exist).
  * Public in proxy.ts; this handler is the only gate.
  */
 
@@ -40,7 +41,12 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "No workspace for DEALFLOW_API_USER_EMAIL" }, { status: 404 });
     }
 
-    const leads = await Lead.find({ workspaceId: user.activeWorkspaceId, isDemoData: { $ne: true } })
+    const includeDemo = new URL(req.url).searchParams.get("demo") === "1";
+
+    const leads = await Lead.find({
+      workspaceId: user.activeWorkspaceId,
+      ...(includeDemo ? {} : { isDemoData: { $ne: true } }),
+    })
       .select("clientName clientCompany serviceOffered platform status followUpCount lastFollowUpAt leadSentAt repliedAt convertedAt updatedAt createdAt")
       .sort({ updatedAt: -1 })
       .lean();
@@ -48,6 +54,7 @@ export async function GET(req: Request) {
     return NextResponse.json(
       {
         generatedAt: new Date().toISOString(),
+        includesDemo: includeDemo,
         rules: { maxFollowUps: MAX_FOLLOW_UPS, followUpAfterDays: FOLLOW_UP_AFTER_DAYS },
         leads: leads.map((l) => {
           const waiting = FOLLOW_UP_STATUSES.includes(l.status) && (l.followUpCount ?? 0) < MAX_FOLLOW_UPS;
