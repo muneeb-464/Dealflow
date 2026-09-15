@@ -22,6 +22,7 @@ export const GET = withAuth(async (_req, ctx) => {
           total: { $sum: 1 },
           converted: { $sum: { $cond: [{ $eq: ["$status", "converted"] }, 1, 0] } },
           rejected: { $sum: { $cond: [{ $eq: ["$status", "rejected"] }, 1, 0] } },
+          dead: { $sum: { $cond: [{ $eq: ["$status", "dead"] }, 1, 0] } },
           followupDue: { $sum: { $cond: [{ $eq: ["$status", "followup_due"] }, 1, 0] } },
         },
       },
@@ -33,9 +34,9 @@ export const GET = withAuth(async (_req, ctx) => {
     ]),
   ]);
 
-  const leadMap: Record<string, { total: number; converted: number; rejected: number; followupDue: number }> = {};
+  const leadMap: Record<string, { total: number; converted: number; rejected: number; dead: number; followupDue: number }> = {};
   for (const l of leadStats) {
-    if (l._id) leadMap[String(l._id)] = { total: l.total, converted: l.converted, rejected: l.rejected, followupDue: l.followupDue };
+    if (l._id) leadMap[String(l._id)] = { total: l.total, converted: l.converted, rejected: l.rejected, dead: l.dead, followupDue: l.followupDue };
   }
 
   const clientMap: Record<string, number> = {};
@@ -46,8 +47,8 @@ export const GET = withAuth(async (_req, ctx) => {
   const result = members.map((m) => {
     const u = m.userId as unknown as { _id: string; name: string; email: string; avatar?: string };
     const uid = String(u._id);
-    const ls = leadMap[uid] ?? { total: 0, converted: 0, rejected: 0, followupDue: 0 };
-    const closedLeads = ls.converted + ls.rejected;
+    const ls = leadMap[uid] ?? { total: 0, converted: 0, rejected: 0, dead: 0, followupDue: 0 };
+    const closedLeads = ls.converted + ls.rejected + ls.dead;
     const openLeads = ls.total - closedLeads;
     const winRate = closedLeads > 0 ? Math.round((ls.converted / closedLeads) * 100) : 0;
 

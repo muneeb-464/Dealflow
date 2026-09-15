@@ -1,31 +1,36 @@
 "use client";
 import LeadStatusBadge, { LeadStatus } from "./LeadStatusBadge";
 import { getPlatformCls, getPlatformLabel } from "./platformColors";
+import FollowUpControl from "./FollowUpControl";
 
 export interface Lead {
   id: string;
   clientName: string;
   platform: string;
-  amount: string;
-  currency: string;
   status: LeadStatus;
   service: string;
   notes: string;
   sentAt: string;
   updatedAt?: string;
+  followUpCount: number;
+  lastFollowUpAt?: string;
   assignedTo?: string;
   createdBy?: string;
   createdByName?: string;
 }
 
+/** Fields the add/edit form sends. Follow-up fields are only changed by the follow-up endpoint. */
+export type LeadInput = Omit<Lead, "id" | "followUpCount" | "lastFollowUpAt">;
+
 interface Props {
   leads: Lead[];
   onEdit: (lead: Lead) => void;
   onDelete: (id: string) => void;
+  onFollowUp: (lead: Lead) => void;
   canEdit?: (lead: Lead) => boolean;
 }
 
-export default function LeadTable({ leads, onEdit, onDelete, canEdit }: Props) {
+export default function LeadTable({ leads, onEdit, onDelete, onFollowUp, canEdit }: Props) {
   if (leads.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-neutral/8 flex flex-col items-center justify-center py-16 gap-3">
@@ -46,7 +51,7 @@ export default function LeadTable({ leads, onEdit, onDelete, canEdit }: Props) {
         <table className="w-full">
           <thead>
             <tr className="border-b border-neutral/8 bg-neutral-light/50">
-              {["Client", "Service", "Platform", "Amount", "Status", "Date", ""].map((h, i) => (
+              {["Client", "Service", "Platform", "Follow-ups", "Status", "Date", ""].map((h, i) => (
                 <th key={i} className="text-left text-[11px] font-semibold text-neutral uppercase tracking-wide px-4 py-3 whitespace-nowrap last:w-16">
                   {h}
                 </th>
@@ -72,7 +77,7 @@ export default function LeadTable({ leads, onEdit, onDelete, canEdit }: Props) {
                   <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${getPlatformCls(lead.platform)}`}>{getPlatformLabel(lead.platform)}</span>
                 </td>
                 <td className="px-4 py-3.5">
-                  <p className="text-primary text-xs font-bold font-display whitespace-nowrap">{lead.currency} {Number(lead.amount).toLocaleString()}</p>
+                  <FollowUpControl lead={lead} onFollowUp={onFollowUp} canAct={!canEdit || canEdit(lead)} compact />
                 </td>
                 <td className="px-4 py-3.5">
                   <LeadStatusBadge status={lead.status} />

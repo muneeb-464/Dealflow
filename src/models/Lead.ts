@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
+import { LEAD_STATUSES, LEAD_PLATFORMS } from "@/constants/leads";
 
-export type LeadStatus = "sent" | "pending" | "followup_due" | "replied" | "converted" | "rejected";
+export type LeadStatus = "sent" | "pending" | "followup_due" | "replied" | "converted" | "rejected" | "dead";
 export type LeadPlatform = "upwork" | "fiverr" | "linkedin" | "direct" | "referral" | "whatsapp" | "cold_email" | "other";
 export type LostReason = "budget_issue" | "no_fit" | "no_reply" | "went_with_competitor" | "project_cancelled" | "other";
 
@@ -15,7 +16,7 @@ export interface ILead extends Document {
   clientCompany?: string;
   platform: LeadPlatform;
   serviceOffered: string;
-  proposedAmount: number;
+  proposedAmount?: number;     // legacy — the UI no longer asks for a price
   currency: string;
   notes?: string;
 
@@ -29,7 +30,7 @@ export interface ILead extends Document {
   // Follow-up tracking
   followUpCount: number;
   lastFollowUpAt?: Date;
-  nextFollowUpAt?: Date;       // set by cron after 48h no reply
+  nextFollowUpAt?: Date;       // not set by anything yet (no cron)
 
   isDemoData: boolean;
 
@@ -46,15 +47,15 @@ const LeadSchema = new Schema<ILead>(
     clientName: { type: String, required: true, trim: true },
     clientEmail: { type: String, lowercase: true, trim: true },
     clientCompany: { type: String, trim: true },
-    platform: { type: String, enum: ["upwork", "fiverr", "linkedin", "direct", "referral", "whatsapp", "cold_email", "other"], required: true },
+    platform: { type: String, enum: LEAD_PLATFORMS, required: true },
     serviceOffered: { type: String, required: true, trim: true },
-    proposedAmount: { type: Number, required: true, min: 0 },
+    proposedAmount: { type: Number, min: 0 },
     currency: { type: String, default: "USD" },
     notes: { type: String },
 
     status: {
       type: String,
-      enum: ["sent", "pending", "followup_due", "replied", "converted", "rejected"],
+      enum: LEAD_STATUSES,
       default: "sent",
       index: true,
     },

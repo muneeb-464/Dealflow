@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { CreateClientDto, Client } from "@/types/client";
+import { CreateClientDto, Client, BILLING_TYPES } from "@/types/client";
 import { PLATFORMS } from "@/constants/platforms";
 import { CURRENCIES } from "@/constants/currencies";
 import { useWorkspaceStore } from "@/store/workspaceStore";
@@ -19,6 +19,7 @@ const empty = (): CreateClientDto => ({
   company: "",
   platform: "DIRECT",
   status: "active",
+  billingType: "one_time",
   totalRevenue: 0,
   currency: "USD",
   notes: "",
@@ -51,6 +52,7 @@ export default function AddClientModal({ open, onClose, onSubmit, initial }: Pro
         company: initial.company ?? "",
         platform: initial.platform,
         status: initial.status,
+        billingType: initial.billingType,
         totalRevenue: initial.totalRevenue,
         currency: initial.currency,
         notes: initial.notes ?? "",
@@ -173,6 +175,26 @@ export default function AddClientModal({ open, onClose, onSubmit, initial }: Pro
               </select>
             </Field>
           </div>
+
+          {/* Client type */}
+          <Field label="Client Type">
+            <div className="grid grid-cols-2 gap-2">
+              {BILLING_TYPES.map((b) => (
+                <button
+                  key={b.value}
+                  type="button"
+                  onClick={() => set("billingType", b.value)}
+                  className={`py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
+                    form.billingType === b.value
+                      ? "bg-primary text-white border-primary"
+                      : "bg-neutral-light text-primary border-transparent hover:border-secondary/50"
+                  }`}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+          </Field>
 
           {/* Revenue + Currency */}
           <div className="grid grid-cols-2 gap-3">

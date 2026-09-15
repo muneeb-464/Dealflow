@@ -2,30 +2,22 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/mongodb";
-import { User, Lead, WorkspaceMember } from "@/models";
+import { getRouteAuthContext } from "@/lib/routeAuth";
+import { closeLeadReminders } from "@/lib/leads";
+import { LEAD_PLATFORMS, LEAD_STATUSES, CLOSED_STATUSES } from "@/constants/leads";
+import { Lead } from "@/models";
 
 const UpdateLeadSchema = z.object({
   clientName: z.string().min(1).max(100).trim().optional(),
   clientEmail: z.string().optional(),
   clientCompany: z.string().optional(),
-  platform: z.enum(["upwork", "fiverr", "linkedin", "direct", "referral", "whatsapp", "cold_email", "other"]).optional(),
+  platform: z.enum(LEAD_PLATFORMS).optional(),
   serviceOffered: z.string().min(1).max(200).trim().optional(),
   proposedAmount: z.number().min(0).optional(),
   currency: z.string().optional(),
   notes: z.string().optional(),
-  status: z.enum(["sent", "pending", "followup_due", "replied", "converted", "rejected"]).optional(),
+  status: z.enum(LEAD_STATUSES).optional(),
 });
-
-async function getAuthContext(userId: string) {
-  const user = await User.findOne({ clerkId: userId });
-  if (!user?.activeWorkspaceId) return null;
-  const member = await WorkspaceMember.findOne({
-    workspaceId: user.activeWorkspaceId,
-    userId: user._id,
-  }).lean() as { role: string } | null;
-  if (!member) return null; // removed from workspace
-  return { user, role: member.role };
-}
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -38,18 +30,23 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
     await connectDB();
-    const ctx = await getAuthContext(userId);
+    const ctx = await getRouteAuthContext(userId);
     if (!ctx) return NextResponse.json({ error: "No active workspace" }, { status: 404 });
 
-    const lead = await Lead.findOne({ _id: id, workspaceId: ctx.user.activeWorkspaceId });
+    const lead = await Lead.findOne({ _id: id, workspaceId: ctx.workspaceId });
     if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
 
-    if (ctx.role === "employee" && !lead.createdBy.equals(ctx.user._id)) {
+    if (ctx.role === "employee" && !lead.createdBy.equals(ctx.userId)) {
       return NextResponse.json({ error: "You can only edit leads you created" }, { status: 403 });
     }
 
+    const wasClosed = CLOSED_STATUSES.includes(lead.status);
     Object.assign(lead, parsed.data);
     await lead.save();
+
+    if (!wasClosed && CLOSED_STATUSES.includes(lead.status)) {
+      await closeLeadReminders(ctx.workspaceId, lead._id);
+    }
 
     return NextResponse.json({ lead });
   } catch (err) {
@@ -66,13 +63,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
 
     await connectDB();
-    const ctx = await getAuthContext(userId);
+    const ctx = await getRouteAuthContext(userId);
     if (!ctx) return NextResponse.json({ error: "No active workspace" }, { status: 404 });
 
-    const lead = await Lead.findOne({ _id: id, workspaceId: ctx.user.activeWorkspaceId });
+    const lead = await Lead.findOne({ _id: id, workspaceId: ctx.workspaceId });
     if (!lead) return NextResponse.json({ error: "Lead not found" }, { status: 404 });
 
-    if (ctx.role === "employee" && !lead.createdBy.equals(ctx.user._id)) {
+    if (ctx.role === "employee" && !lead.createdBy.equals(ctx.userId)) {
       return NextResponse.json({ error: "You can only delete leads you created" }, { status: 403 });
     }
 

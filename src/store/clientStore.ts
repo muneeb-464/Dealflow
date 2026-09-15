@@ -1,6 +1,9 @@
 import { create } from "zustand";
 import type { Client, CreateClientDto } from "@/types/client";
 
+// Pages reuse cached clients if they were fetched this recently (mutations update the cache directly).
+const FRESH_MS = 30_000;
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toUIClient(doc: any): Client {
   return {
@@ -11,6 +14,7 @@ function toUIClient(doc: any): Client {
     company: doc.company,
     platform: (doc.platform ?? "direct").toUpperCase() as Client["platform"],
     status: doc.status ?? "active",
+    billingType: doc.billingType ?? "one_time",
     totalRevenue: doc.totalRevenue ?? 0,
     currency: doc.currency ?? "USD",
     projectsCount: doc.orders?.length ?? 0,
@@ -27,25 +31,35 @@ function toUIClient(doc: any): Client {
 interface ClientStore {
   clients: Client[];
   loading: boolean;
-  fetchClients: () => Promise<void>;
+  lastFetched: number;
+  fetchClients: (force?: boolean) => Promise<void>;
   addClient: (data: CreateClientDto) => Promise<void>;
   updateClient: (id: string, data: Partial<CreateClientDto>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
 }
 
-export const useClientStore = create<ClientStore>((set) => ({
+let inflight: Promise<void> | null = null;
+
+export const useClientStore = create<ClientStore>((set, get) => ({
   clients: [],
   loading: false,
+  lastFetched: 0,
 
-  fetchClients: async () => {
-    set({ loading: true });
-    try {
-      const res = await fetch("/api/clients");
-      const data = await res.json();
-      if (res.ok) set({ clients: (data.clients ?? []).map(toUIClient) });
-    } finally {
-      set({ loading: false });
-    }
+  fetchClients: async (force = false) => {
+    if (inflight) return inflight;
+    if (!force && Date.now() - get().lastFetched < FRESH_MS) return;
+    inflight = (async () => {
+      set({ loading: true });
+      try {
+        const res = await fetch("/api/clients");
+        const data = await res.json();
+        if (res.ok) set({ clients: (data.clients ?? []).map(toUIClient), lastFetched: Date.now() });
+      } finally {
+        set({ loading: false });
+        inflight = null;
+      }
+    })();
+    return inflight;
   },
 
   addClient: async (data) => {
@@ -78,7 +92,10 @@ export const useClientStore = create<ClientStore>((set) => ({
     });
     const json = await res.json();
     if (res.ok && json.client) {
-      set((s) => ({ clients: s.clients.map((c) => (c._id === id ? toUIClient(json.client) : c)) }));
+      // PATCH returns the raw doc without the populated creator — keep the name we already have
+      set((s) => ({
+        clients: s.clients.map((c) => (c._id === id ? { ...toUIClient(json.client), createdByName: c.createdByName } : c)),
+      }));
     }
   },
 

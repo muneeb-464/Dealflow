@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export type ClientStatus = "active" | "inactive" | "churned";
+export type BillingType = "one_time" | "recurring";
 export type OrderStatus = "in_progress" | "completed" | "cancelled" | "on_hold";
 
 export interface IOrder {
@@ -30,6 +31,7 @@ export interface IClient extends Document {
   platform: string;
 
   status: ClientStatus;
+  billingType: BillingType;  // one-time project vs recurring (retainer / monthly)
   totalRevenue: number;    // denormalized sum — updated on order change
   currency: string;
   tags: string[];
@@ -71,6 +73,7 @@ const ClientSchema = new Schema<IClient>(
     platform: { type: String, default: "direct" },
 
     status: { type: String, enum: ["active", "inactive", "churned"], default: "active", index: true },
+    billingType: { type: String, enum: ["one_time", "recurring"], default: "one_time" },
     totalRevenue: { type: Number, default: 0 },
     currency: { type: String, default: "USD" },
     tags: [{ type: String }],

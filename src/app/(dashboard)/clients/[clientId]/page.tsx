@@ -1,5 +1,5 @@
 "use client";
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useClientStore } from "@/store/clientStore";
@@ -8,6 +8,7 @@ import { getPlatformCls } from "@/components/leads/platformColors";
 import { PLATFORMS } from "@/constants/platforms";
 import { formatCurrency, formatDate, getInitials } from "@/lib/utils";
 import { CreateClientDto } from "@/types/client";
+import BillingTypeBadge from "@/components/clients/BillingTypeBadge";
 
 const STATUS_CLS = {
   active:   "bg-secondary/10 text-secondary",
@@ -24,11 +25,22 @@ const MOCK_ACTIVITY = [
 export default function ClientDetailPage({ params }: { params: Promise<{ clientId: string }> }) {
   const { clientId } = use(params);
   const router = useRouter();
-  const { clients, updateClient, deleteClient } = useClientStore();
+  const { clients, loading, lastFetched, fetchClients, updateClient, deleteClient } = useClientStore();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  // Direct visit / refresh: the store is empty until clients are fetched
+  useEffect(() => { fetchClients(); }, [fetchClients]);
+
   const client = clients.find((c) => c._id === clientId);
+
+  if (!client && (loading || lastFetched === 0)) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <div className="w-6 h-6 border-2 border-secondary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   if (!client) {
     return (
@@ -87,6 +99,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ clientI
                 <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_CLS[client.status]}`}>
                   {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
                 </span>
+                <BillingTypeBadge type={client.billingType} />
                 <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${getPlatformCls(platformLabel)}`}>
                   {platformLabel}
                 </span>

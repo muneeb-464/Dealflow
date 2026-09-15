@@ -12,6 +12,7 @@ const CreateClientSchema = z.object({
   company: z.string().optional(),
   platform: z.string().default("direct"),
   status: z.enum(["active", "inactive", "churned"]).default("active"),
+  billingType: z.enum(["one_time", "recurring"]).default("one_time"),
   currency: z.string().default("USD"),
   totalRevenue: z.number().min(0).default(0),
   notes: z.string().optional(),

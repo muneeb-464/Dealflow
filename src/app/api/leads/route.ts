@@ -4,17 +4,18 @@ import { connectDB } from "@/lib/mongodb";
 import { withAuth } from "@/lib/withAuth";
 import type { AuthContext } from "@/lib/withAuth";
 import { Lead, Reminder } from "@/models";
+import { LEAD_PLATFORMS, LEAD_STATUSES } from "@/constants/leads";
 
 const CreateLeadSchema = z.object({
   clientName: z.string().min(1).max(100).trim(),
   clientEmail: z.string().optional(),
   clientCompany: z.string().optional(),
-  platform: z.enum(["upwork", "fiverr", "linkedin", "direct", "referral", "whatsapp", "cold_email", "other"]),
+  platform: z.enum(LEAD_PLATFORMS),
   serviceOffered: z.string().min(1).max(200).trim(),
-  proposedAmount: z.number().min(0),
+  proposedAmount: z.number().min(0).optional(),
   currency: z.string().default("USD"),
   notes: z.string().optional(),
-  status: z.enum(["sent", "pending", "followup_due", "replied", "converted", "rejected"]).default("sent"),
+  status: z.enum(LEAD_STATUSES).default("sent"),
   leadSentAt: z.string().optional(),
 });
 

@@ -1,24 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
-import type { Lead } from "./LeadTable";
-import type { LeadStatus } from "./LeadStatusBadge";
+import type { Lead, LeadInput } from "./LeadTable";
+import { LEAD_UI_STATUSES, type LeadStatus } from "./LeadStatusBadge";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useIsAgency } from "@/hooks/useIsAgency";
 import { PLATFORMS } from "@/constants/platforms";
-const STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSave: (lead: Omit<Lead, "id">) => void;
+  onSave: (lead: LeadInput) => void;
   editLead?: Lead | null;
 }
 
-const empty = (): Omit<Lead, "id"> => ({
+const empty = (): LeadInput => ({
   clientName: "",
   platform: "UPWORK",
-  amount: "",
-  currency: "USD",
   status: "Sent",
   service: "",
   notes: "",
@@ -37,8 +34,9 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
     if (!open) return;
     if (isAgency && members.length === 0) fetchMembers();
     if (editLead) {
-      const { id: _id, ...rest } = editLead;
-      setForm(rest);
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { id: _id, followUpCount: _count, lastFollowUpAt: _last, ...rest } = editLead;
+      setForm({ ...rest, sentAt: rest.sentAt.slice(0, 10) });
     } else {
       setForm(empty());
     }
@@ -56,7 +54,6 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
     const e: typeof errors = {};
     if (!form.clientName.trim()) e.clientName = "Required";
     if (!form.service.trim()) e.service = "Required";
-    if (!form.amount || isNaN(Number(form.amount))) e.amount = "Enter a valid number";
     return e;
   };
 
@@ -117,26 +114,7 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
             </Field>
             <Field label="Status">
               <select value={form.status} onChange={(e) => set("status", e.target.value as LeadStatus)} className={inputCls(false)}>
-                {STATUSES.map((s) => <option key={s}>{s}</option>)}
-              </select>
-            </Field>
-          </div>
-
-          {/* Amount + Currency row */}
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Proposed Amount" error={errors.amount} required>
-              <input
-                value={form.amount}
-                onChange={(e) => set("amount", e.target.value)}
-                placeholder="1200"
-                type="number"
-                min={0}
-                className={inputCls(!!errors.amount)}
-              />
-            </Field>
-            <Field label="Currency">
-              <select value={form.currency} onChange={(e) => set("currency", e.target.value)} className={inputCls(false)}>
-                {["USD", "PKR", "EUR", "GBP", "AED", "CAD", "AUD"].map((c) => <option key={c}>{c}</option>)}
+                {LEAD_UI_STATUSES.map((s) => <option key={s}>{s}</option>)}
               </select>
             </Field>
           </div>

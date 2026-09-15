@@ -1,11 +1,11 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import AccessGate from "@/components/layout/AccessGate";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { useClientStore } from "@/store/clientStore";
-import { useLeadStore } from "@/store/leadStore";
+import BillingTypeBadge from "@/components/clients/BillingTypeBadge";
 import { PLATFORMS, PLATFORM_COLORS } from "@/constants/platforms";
-import { formatCurrency, getInitials } from "@/lib/utils";
+import { formatCurrency, getInitials, toUSD } from "@/lib/utils";
 import type { Client } from "@/types/client";
 import { SkeletonStatCard, SkeletonChart, SkeletonTable } from "@/components/ui/Skeleton";
 
@@ -28,27 +28,31 @@ function TooltipContent({ active, payload, label }: any) {
 function RevenuePageInner() {
   const clients = useClientStore((s) => s.clients);
   const clientsLoading = useClientStore((s) => s.loading);
-  const leads = useLeadStore((s) => s.leads);
-  const leadsLoading = useLeadStore((s) => s.loading);
+  const fetchClients = useClientStore((s) => s.fetchClients);
+
+  // Direct visit / refresh: store is empty until fetched (cached fetch — no-op if fresh)
+  useEffect(() => { fetchClients(); }, [fetchClients]);
 
   const stats = useMemo(() => {
     const active = clients.filter((c) => c.status === "active");
     const churned = clients.filter((c) => c.status === "churned");
-    const converted = leads.filter((l) => l.status === "Converted");
-    const leadRevenue = converted.reduce((s, l) => s + Number(l.amount), 0);
-    const avgDeal = converted.length ? Math.round(leadRevenue / converted.length) : 0;
-    return { active: active.length, churned: churned.length, leadRevenue, avgDeal, convertedCount: converted.length };
-  }, [clients, leads]);
+    const recurring = clients.filter((c) => c.billingType === "recurring");
+    const oneTime = clients.filter((c) => c.billingType !== "recurring");
+    const sumUSD = (list: typeof clients) => list.reduce((s, c) => s + toUSD(c.totalRevenue, c.currency), 0);
+    return {
+      active: active.length,
+      churned: churned.length,
+      recurringRevenue: sumUSD(recurring),
+      recurringCount: recurring.length,
+      oneTimeRevenue: sumUSD(oneTime),
+      oneTimeCount: oneTime.length,
+    };
+  }, [clients]);
 
   const byPlatform = useMemo(() => {
     const map: Record<string, number> = {};
     clients.forEach((c) => {
-      const usdEq = c.currency === "USD" ? c.totalRevenue
-        : c.currency === "PKR" ? c.totalRevenue / 280
-        : c.currency === "GBP" ? c.totalRevenue * 1.27
-        : c.currency === "AED" ? c.totalRevenue * 0.27
-        : c.totalRevenue;
-      map[c.platform] = (map[c.platform] ?? 0) + Math.round(usdEq);
+      map[c.platform] = (map[c.platform] ?? 0) + toUSD(c.totalRevenue, c.currency);
     });
     return PLATFORMS
       .map((p) => ({ platform: p.label, value: map[p.value] ?? 0, key: p.value }))
@@ -71,7 +75,7 @@ function RevenuePageInner() {
     return Object.entries(map).sort((a, b) => b[1].total - a[1].total);
   }, [clients]);
 
-  if ((clientsLoading || leadsLoading) && clients.length === 0 && leads.length === 0) {
+  if (clientsLoading && clients.length === 0) {
     return (
       <div className="space-y-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -95,8 +99,8 @@ function RevenuePageInner() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Converted Lead Revenue", value: `$${stats.leadRevenue.toLocaleString()}`, sub: `${stats.convertedCount} deals closed`, green: true },
-          { label: "Avg Deal Size", value: stats.avgDeal > 0 ? `$${stats.avgDeal.toLocaleString()}` : "—", sub: "Per converted lead", green: stats.avgDeal > 0 },
+          { label: "Recurring Revenue", value: `$${stats.recurringRevenue.toLocaleString()}`, sub: `${stats.recurringCount} recurring clients · USD est.`, green: true },
+          { label: "One-time Revenue", value: `$${stats.oneTimeRevenue.toLocaleString()}`, sub: `${stats.oneTimeCount} one-time clients · USD est.`, green: true },
           { label: "Active Clients", value: String(stats.active), sub: "Ongoing relationships", green: true },
           { label: "Churned Clients", value: String(stats.churned), sub: "Lost accounts", green: false },
         ].map((k) => (
@@ -167,7 +171,7 @@ function RevenuePageInner() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-neutral/8">
-                {["Client", "Platform", "Status", "Projects", "Total Revenue"].map((h) => (
+                {["Client", "Platform", "Type", "Status", "Projects", "Total Revenue"].map((h) => (
                   <th key={h} className="text-left text-[11px] font-semibold text-neutral uppercase tracking-wide pb-2.5 pr-4 last:pr-0 last:text-right">{h}</th>
                 ))}
               </tr>
@@ -191,6 +195,9 @@ function RevenuePageInner() {
                     </td>
                     <td className="py-3 pr-4">
                       <span className="text-xs font-semibold px-2 py-1 rounded-lg" style={{ background: platColor?.bg, color: platColor?.color }}>{plat}</span>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <BillingTypeBadge type={c.billingType} />
                     </td>
                     <td className="py-3 pr-4">
                       <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full capitalize ${STATUS_CLS[c.status]}`}>{c.status}</span>

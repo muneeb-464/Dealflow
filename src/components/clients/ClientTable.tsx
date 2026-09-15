@@ -3,6 +3,7 @@ import { Client } from "@/types/client";
 import { formatCurrency, formatDate, getInitials } from "@/lib/utils";
 import { getPlatformCls } from "@/components/leads/platformColors";
 import { PLATFORMS } from "@/constants/platforms";
+import BillingTypeBadge from "./BillingTypeBadge";
 
 const STATUS_CLS: Record<Client["status"], string> = {
   active:   "bg-secondary/10 text-secondary",
@@ -41,7 +42,7 @@ export default function ClientTable({ clients, onEdit, onDelete, onRowClick, can
         <table className="w-full">
           <thead>
             <tr className="border-b border-neutral/8 bg-neutral-light/50">
-              {["Client", "Platform", "Status", "Revenue", "Projects", "Added", ""].map((h, i) => (
+              {["Client", "Platform", "Type", "Status", "Revenue", "Projects", "Added", ""].map((h, i) => (
                 <th key={i} className="text-left text-[11px] font-semibold text-neutral uppercase tracking-wide px-4 py-3 whitespace-nowrap last:w-16">
                   {h}
                 </th>
@@ -79,9 +80,14 @@ export default function ClientTable({ clients, onEdit, onDelete, onRowClick, can
 
                   {/* Platform */}
                   <td className="px-4 py-3.5">
-                    <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${getPlatformCls(platformLabel)}`}>
+                    <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${getPlatformCls(client.platform)}`}>
                       {platformLabel}
                     </span>
+                  </td>
+
+                  {/* Type */}
+                  <td className="px-4 py-3.5">
+                    <BillingTypeBadge type={client.billingType} />
                   </td>
 
                   {/* Status */}

@@ -2,7 +2,8 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectDB } from "@/lib/mongodb";
-import { User, Client, WorkspaceMember } from "@/models";
+import { getRouteAuthContext } from "@/lib/routeAuth";
+import { Client } from "@/models";
 
 const UpdateClientSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
@@ -11,21 +12,11 @@ const UpdateClientSchema = z.object({
   company: z.string().optional(),
   platform: z.string().optional(),
   status: z.enum(["active", "inactive", "churned"]).optional(),
+  billingType: z.enum(["one_time", "recurring"]).optional(),
   currency: z.string().optional(),
   totalRevenue: z.number().min(0).optional(),
   notes: z.string().optional(),
 });
-
-async function getAuthContext(userId: string) {
-  const user = await User.findOne({ clerkId: userId });
-  if (!user?.activeWorkspaceId) return null;
-  const member = await WorkspaceMember.findOne({
-    workspaceId: user.activeWorkspaceId,
-    userId: user._id,
-  }).lean() as { role: string } | null;
-  if (!member) return null; // removed from workspace
-  return { user, role: member.role };
-}
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -38,13 +29,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
     await connectDB();
-    const ctx = await getAuthContext(userId);
+    const ctx = await getRouteAuthContext(userId);
     if (!ctx) return NextResponse.json({ error: "No active workspace" }, { status: 404 });
 
-    const client = await Client.findOne({ _id: id, workspaceId: ctx.user.activeWorkspaceId });
+    const client = await Client.findOne({ _id: id, workspaceId: ctx.workspaceId });
     if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
 
-    if (ctx.role === "employee" && !client.createdBy.equals(ctx.user._id)) {
+    if (ctx.role === "employee" && !client.createdBy.equals(ctx.userId)) {
       return NextResponse.json({ error: "You can only edit clients you created" }, { status: 403 });
     }
 
@@ -66,13 +57,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     const { id } = await params;
 
     await connectDB();
-    const ctx = await getAuthContext(userId);
+    const ctx = await getRouteAuthContext(userId);
     if (!ctx) return NextResponse.json({ error: "No active workspace" }, { status: 404 });
 
-    const client = await Client.findOne({ _id: id, workspaceId: ctx.user.activeWorkspaceId });
+    const client = await Client.findOne({ _id: id, workspaceId: ctx.workspaceId });
     if (!client) return NextResponse.json({ error: "Client not found" }, { status: 404 });
 
-    if (ctx.role === "employee" && !client.createdBy.equals(ctx.user._id)) {
+    if (ctx.role === "employee" && !client.createdBy.equals(ctx.userId)) {
       return NextResponse.json({ error: "You can only delete clients you created" }, { status: 403 });
     }
 

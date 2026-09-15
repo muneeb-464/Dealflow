@@ -8,10 +8,11 @@ import { useClientStore } from "@/store/clientStore";
 import StatCard from "@/components/dashboard/StatCard";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
-import LeadStatusBadge, { LeadStatus } from "@/components/leads/LeadStatusBadge";
+import LeadStatusBadge, { LeadStatus, LEAD_UI_STATUSES } from "@/components/leads/LeadStatusBadge";
 import { getPlatformCls } from "@/components/leads/platformColors";
 import { PLATFORMS } from "@/constants/platforms";
-import { formatCurrency, formatDate, getInitials } from "@/lib/utils";
+import { formatCurrency, formatDate, getInitials, toUSD } from "@/lib/utils";
+import { MAX_FOLLOW_UPS } from "@/constants/leads";
 import type { Client } from "@/types/client";
 import { SkeletonStatCard, SkeletonChart, SkeletonActivity, SkeletonPipeline, SkeletonTable } from "@/components/ui/Skeleton";
 
@@ -20,7 +21,7 @@ interface MemberStat {
   stats: { assignedLeads: number; openLeads: number; convertedLeads: number; followupDue: number; assignedClients: number; winRate: number };
 }
 
-const PIPELINE_STAGES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
+const PIPELINE_STAGES = LEAD_UI_STATUSES;
 
 const STAGE_COLOR: Record<LeadStatus, string> = {
   Sent:        "bg-neutral/40",
@@ -29,6 +30,7 @@ const STAGE_COLOR: Record<LeadStatus, string> = {
   Replied:     "bg-secondary/60",
   Converted:   "bg-secondary",
   Rejected:    "bg-tertiary",
+  Dead:        "bg-neutral",
 };
 
 const CLIENT_STATUS_CLS: Record<Client["status"], string> = {
@@ -63,18 +65,19 @@ export default function DashboardPage() {
       .finally(() => setTeamLoading(false));
   }, [isAgency]);
 
-  const loading = leadsLoading || clientsLoading;
+  // Only block on the skeleton when there is nothing cached to show yet
+  const loading = (leadsLoading || clientsLoading) && leads.length === 0 && clients.length === 0;
 
   const stats = useMemo(() => {
     const total = leads.length;
     const converted = leads.filter((l) => l.status === "Converted").length;
     const followUp = leads.filter((l) => l.status === "Follow-up").length;
-    const revenue = leads
-      .filter((l) => l.status === "Converted")
-      .reduce((sum, l) => sum + Number(l.amount), 0);
+    // Leads carry no price — revenue comes from clients (USD estimate)
+    const revenue = clients.reduce((sum, c) => sum + toUSD(c.totalRevenue, c.currency), 0);
+    const recurring = clients.filter((c) => c.billingType === "recurring").length;
 
-    return { total, converted, followUp, revenue };
-  }, [leads]);
+    return { total, converted, followUp, revenue, recurring, oneTime: clients.length - recurring };
+  }, [leads, clients]);
 
   const pipelineCounts = useMemo(() =>
     PIPELINE_STAGES.map((s) => ({
@@ -136,9 +139,9 @@ export default function DashboardPage() {
           accent="secondary"
         />
         <StatCard
-          label="Revenue (Converted)"
+          label="Client Revenue"
           value={stats.revenue > 0 ? `$${stats.revenue.toLocaleString()}` : "$0"}
-          sub={stats.converted > 0 ? `Avg $${Math.round(stats.revenue / stats.converted).toLocaleString()} per deal` : "No conversions yet"}
+          sub={clients.length > 0 ? `${stats.recurring} recurring · ${stats.oneTime} one-time` : "No clients yet"}
           icon="M12 2v20 M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"
           accent="secondary"
         />
@@ -208,7 +211,7 @@ export default function DashboardPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-neutral/8">
-                    {["Client & Service", "Platform", "Amount", "Status"].map((h) => (
+                    {["Client & Service", "Platform", "Follow-ups", "Status"].map((h) => (
                       <th key={h} className="text-left text-[11px] font-semibold text-neutral uppercase tracking-wide pb-2.5 pr-4 last:pr-0">{h}</th>
                     ))}
                   </tr>
@@ -226,7 +229,7 @@ export default function DashboardPage() {
                         <span className="text-neutral text-xs">{l.platform}</span>
                       </td>
                       <td className="py-3 pr-4">
-                        <span className="text-primary text-xs font-bold font-display">{l.currency} {Number(l.amount).toLocaleString()}</span>
+                        <span className="text-primary text-xs font-bold font-display">{l.followUpCount}/{MAX_FOLLOW_UPS}</span>
                       </td>
                       <td className="py-3">
                         <LeadStatusBadge status={l.status} />

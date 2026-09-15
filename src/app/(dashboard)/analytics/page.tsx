@@ -7,7 +7,7 @@ import { useLeadStore } from "@/store/leadStore";
 import { useClientStore } from "@/store/clientStore";
 import { useReminderStore } from "@/store/reminderStore";
 import { PLATFORMS } from "@/constants/platforms";
-import type { LeadStatus } from "@/components/leads/LeadStatusBadge";
+import { LEAD_UI_STATUSES, type LeadStatus } from "@/components/leads/LeadStatusBadge";
 import { SkeletonStatCard, SkeletonChart } from "@/components/ui/Skeleton";
 
 interface MemberAnalytics {
@@ -29,10 +29,10 @@ interface MemberAnalytics {
   };
 }
 
-const STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
+const STATUSES = LEAD_UI_STATUSES;
 const STATUS_COLORS: Record<LeadStatus, string> = {
   "Sent": "#767776", "Pending": "#4ADE80", "Follow-up": "#F97316",
-  "Replied": "#22c55e", "Converted": "#0A2A22", "Rejected": "#fb923c",
+  "Replied": "#22c55e", "Converted": "#0A2A22", "Rejected": "#fb923c", "Dead": "#a1a1aa",
 };
 const CHANNEL_COLORS: Record<string, string> = { email: "#4ADE80", whatsapp: "#22c55e", "in-app": "#0A2A22" };
 
@@ -56,6 +56,11 @@ function AnalyticsPageInner() {
   const clients = useClientStore((s) => s.clients);
   const clientsLoading = useClientStore((s) => s.loading);
   const reminders = useReminderStore((s) => s.reminders);
+  const fetchLeads = useLeadStore((s) => s.fetchLeads);
+  const fetchClients = useClientStore((s) => s.fetchClients);
+
+  // Direct visit / refresh: stores are empty until fetched (cached fetch — no-op if fresh)
+  useEffect(() => { fetchLeads(); fetchClients(); }, [fetchLeads, fetchClients]);
 
   const [teamAnalytics, setTeamAnalytics] = useState<MemberAnalytics[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
@@ -94,8 +99,8 @@ function AnalyticsPageInner() {
   const platformLeads = useMemo(() => {
     return PLATFORMS.map((p) => ({
       platform: p.label,
-      leads: leads.filter((l) => l.platform.toLowerCase() === p.label.toLowerCase()).length,
-      converted: leads.filter((l) => l.platform.toLowerCase() === p.label.toLowerCase() && l.status === "Converted").length,
+      leads: leads.filter((l) => l.platform.toUpperCase() === p.value).length,
+      converted: leads.filter((l) => l.platform.toUpperCase() === p.value && l.status === "Converted").length,
     })).filter((p) => p.leads > 0).sort((a, b) => b.leads - a.leads);
   }, [leads]);
 

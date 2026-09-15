@@ -1,9 +1,13 @@
 "use client";
 import { useState, useMemo } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { useLeadStore } from "@/store/leadStore";
+import { useClientStore } from "@/store/clientStore";
+import { toUSD } from "@/lib/utils";
 
 type Range = "weekly" | "monthly" | "quarterly" | "custom";
+
+// One revenue point per client, dated when the client was added (USD estimate).
+type Point = { date: Date; amount: number };
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
@@ -15,7 +19,7 @@ function CustomTooltip({ active, payload, label }: any) {
   );
 }
 
-function buildWeekly(leads: ReturnType<typeof useLeadStore.getState>["leads"]) {
+function buildWeekly(points: Point[]) {
   const days: { label: string; revenue: number; date: Date }[] = [];
   const now = new Date();
   for (let i = 6; i >= 0; i--) {
@@ -23,16 +27,15 @@ function buildWeekly(leads: ReturnType<typeof useLeadStore.getState>["leads"]) {
     d.setDate(now.getDate() - i);
     days.push({ date: d, label: d.toLocaleDateString("en-US", { weekday: "short" }), revenue: 0 });
   }
-  leads.forEach((l) => {
-    if (l.status !== "Converted") return;
-    const d = new Date(l.sentAt);
+  points.forEach((p) => {
+    const d = p.date;
     const slot = days.find((s) => s.date.toDateString() === d.toDateString());
-    if (slot) slot.revenue += Number(l.amount);
+    if (slot) slot.revenue += p.amount;
   });
   return days.map(({ label, revenue }) => ({ label, revenue }));
 }
 
-function buildMonthly(leads: ReturnType<typeof useLeadStore.getState>["leads"]) {
+function buildMonthly(points: Point[]) {
   const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const now = new Date();
   const slots: { label: string; revenue: number; key: string }[] = [];
@@ -40,17 +43,16 @@ function buildMonthly(leads: ReturnType<typeof useLeadStore.getState>["leads"]) 
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     slots.push({ label: MONTHS[d.getMonth()], key: `${d.getFullYear()}-${d.getMonth()}`, revenue: 0 });
   }
-  leads.forEach((l) => {
-    if (l.status !== "Converted") return;
-    const d = new Date(l.sentAt);
+  points.forEach((p) => {
+    const d = p.date;
     const key = `${d.getFullYear()}-${d.getMonth()}`;
     const slot = slots.find((s) => s.key === key);
-    if (slot) slot.revenue += Number(l.amount);
+    if (slot) slot.revenue += p.amount;
   });
   return slots.map(({ label, revenue }) => ({ label, revenue }));
 }
 
-function buildQuarterly(leads: ReturnType<typeof useLeadStore.getState>["leads"]) {
+function buildQuarterly(points: Point[]) {
   const now = new Date();
   const year = now.getFullYear();
   const slots = [
@@ -59,17 +61,16 @@ function buildQuarterly(leads: ReturnType<typeof useLeadStore.getState>["leads"]
     { label: "Q3", revenue: 0, months: [6, 7, 8], year },
     { label: "Q4", revenue: 0, months: [9, 10, 11], year },
   ];
-  leads.forEach((l) => {
-    if (l.status !== "Converted") return;
-    const d = new Date(l.sentAt);
+  points.forEach((p) => {
+    const d = p.date;
     if (d.getFullYear() !== year) return;
     const slot = slots.find((s) => s.months.includes(d.getMonth()));
-    if (slot) slot.revenue += Number(l.amount);
+    if (slot) slot.revenue += p.amount;
   });
   return slots.map(({ label, revenue }) => ({ label, revenue }));
 }
 
-function buildCustom(leads: ReturnType<typeof useLeadStore.getState>["leads"], from: string, to: string) {
+function buildCustom(points: Point[], from: string, to: string) {
   const start = new Date(from);
   const end = new Date(to);
   end.setHours(23, 59, 59);
@@ -84,11 +85,10 @@ function buildCustom(leads: ReturnType<typeof useLeadStore.getState>["leads"], f
       d.setDate(start.getDate() + i);
       slots.push({ label: d.toLocaleDateString("en-US", { month: "short", day: "numeric" }), dateStr: d.toDateString(), revenue: 0 });
     }
-    leads.forEach((l) => {
-      if (l.status !== "Converted") return;
-      const d = new Date(l.sentAt);
+    points.forEach((p) => {
+      const d = p.date;
       const slot = slots.find((s) => s.dateStr === d.toDateString());
-      if (slot) slot.revenue += Number(l.amount);
+      if (slot) slot.revenue += p.amount;
     });
     return slots.map(({ label, revenue }) => ({ label, revenue }));
   }
@@ -101,30 +101,33 @@ function buildCustom(leads: ReturnType<typeof useLeadStore.getState>["leads"], f
     monthSet.set(k, { label: `${MONTHS[cur.getMonth()]} ${cur.getFullYear()}`, revenue: 0 });
     cur.setMonth(cur.getMonth() + 1);
   }
-  leads.forEach((l) => {
-    if (l.status !== "Converted") return;
-    const d = new Date(l.sentAt);
+  points.forEach((p) => {
+    const d = p.date;
     if (d < start || d > end) return;
     const k = `${d.getFullYear()}-${d.getMonth()}`;
     const slot = monthSet.get(k);
-    if (slot) slot.revenue += Number(l.amount);
+    if (slot) slot.revenue += p.amount;
   });
   return Array.from(monthSet.values());
 }
 
 export default function RevenueChart() {
-  const leads = useLeadStore((s) => s.leads);
+  const clients = useClientStore((s) => s.clients);
+  const points = useMemo<Point[]>(
+    () => clients.map((c) => ({ date: new Date(c.createdAt), amount: toUSD(c.totalRevenue, c.currency) })),
+    [clients]
+  );
   const [range, setRange] = useState<Range>("monthly");
   const [customFrom, setCustomFrom] = useState("");
   const [customTo, setCustomTo] = useState("");
   const [showCustom, setShowCustom] = useState(false);
 
   const data = useMemo(() => {
-    if (range === "weekly")    return buildWeekly(leads);
-    if (range === "quarterly") return buildQuarterly(leads);
-    if (range === "custom")    return buildCustom(leads, customFrom, customTo);
-    return buildMonthly(leads);
-  }, [leads, range, customFrom, customTo]);
+    if (range === "weekly")    return buildWeekly(points);
+    if (range === "quarterly") return buildQuarterly(points);
+    if (range === "custom")    return buildCustom(points, customFrom, customTo);
+    return buildMonthly(points);
+  }, [points, range, customFrom, customTo]);
 
   const hasData = data.some((d) => d.revenue > 0);
   const totalRevenue = data.reduce((s, d) => s + d.revenue, 0);
@@ -205,7 +208,7 @@ export default function RevenueChart() {
           </div>
           <p className="text-primary text-xs font-semibold">No revenue yet</p>
           <p className="text-neutral text-[11px] text-center max-w-[180px]">
-            Revenue appears here once leads are moved to <span className="text-secondary font-semibold">Converted</span>
+            Revenue appears here once clients have <span className="text-secondary font-semibold">revenue</span> added
           </p>
         </div>
       ) : (

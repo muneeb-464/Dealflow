@@ -1,22 +1,21 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { useLeadStore } from "@/store/leadStore";
-import { useReminderStore } from "@/store/reminderStore";
 import { useAuthStore } from "@/store/authStore";
-import LeadTable, { Lead } from "@/components/leads/LeadTable";
+import LeadTable, { Lead, LeadInput } from "@/components/leads/LeadTable";
 import LeadKanban from "@/components/leads/LeadKanban";
 import AddLeadModal from "@/components/leads/AddLeadModal";
 import ApprovalRequestModal from "@/components/leads/ApprovalRequestModal";
-import { LeadStatus } from "@/components/leads/LeadStatusBadge";
+import { LeadStatus, LEAD_UI_STATUSES } from "@/components/leads/LeadStatusBadge";
 import { SkeletonTable } from "@/components/ui/Skeleton";
+import { MAX_FOLLOW_UPS } from "@/constants/leads";
 
-const STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
+const STATUSES = LEAD_UI_STATUSES;
 
 export default function LeadsPage() {
-  const { leads, loading, fetchLeads, addLead, updateLead, deleteLead, setStatus } = useLeadStore();
+  const { leads, loading, fetchLeads, addLead, updateLead, deleteLead, setStatus, logFollowUp } = useLeadStore();
 
   useEffect(() => { fetchLeads(); }, [fetchLeads]);
-  const { addReminder } = useReminderStore();
   const authUser = useAuthStore((s) => s.user);
   const userRole = authUser?.role ?? "employee";
   const canActOnLead = (lead: Lead) =>
@@ -27,6 +26,7 @@ export default function LeadsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [approvalModal, setApprovalModal] = useState<{ id: string; name: string } | null>(null);
   const [approvalToast, setApprovalToast] = useState("");
+  const [lastFollowUpLead, setLastFollowUpLead] = useState<Lead | null>(null);
   const [view, setView] = useState<"kanban" | "table">("kanban");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "All">("All");
@@ -45,29 +45,38 @@ export default function LeadsPage() {
     return map;
   }, [leads]);
 
-  const handleSave = async (data: Omit<Lead, "id">) => {
+  const handleSave = async (data: LeadInput) => {
+    // The API creates the lead's follow-up reminders itself.
     if (editLead) {
       await updateLead(editLead.id, data);
     } else {
       await addLead(data);
-      addReminder({
-        title: `Update lead — ${data.clientName}`,
-        description: "Lead added recently. Check if follow-up is needed.",
-        type: "lead",
-        linkedName: data.clientName,
-        channels: ["in-app"],
-        frequency: "every2days",
-        nextReminderAt: new Date(Date.now() + 2 * 86400000).toISOString(),
-      });
     }
     setEditLead(null);
+  };
+
+  const showToast = (msg: string) => {
+    setApprovalToast(msg);
+    setTimeout(() => setApprovalToast(""), 3500);
+  };
+
+  const sendFollowUp = async (lead: Lead) => {
+    const error = await logFollowUp(lead.id);
+    if (error) return showToast(error);
+    if (lead.followUpCount + 1 >= MAX_FOLLOW_UPS) showToast(`${lead.clientName} moved to Dead — ${MAX_FOLLOW_UPS} follow-ups, no reply`);
+  };
+
+  // The last allowed follow-up closes the lead, so confirm that one first.
+  const handleFollowUp = (lead: Lead) => {
+    if (lead.followUpCount + 1 >= MAX_FOLLOW_UPS) setLastFollowUpLead(lead);
+    else sendFollowUp(lead);
   };
 
   const handleEdit = (lead: Lead) => { setEditLead(lead); setModalOpen(true); };
 
   const handleDelete = (id: string) => {
     const lead = leads.find((l) => l.id === id);
-    if (!canActOnLead(lead ?? { id, clientName: "", platform: "", amount: "", currency: "", status: "Sent", service: "", notes: "", sentAt: "" })) return;
+    if (!lead || !canActOnLead(lead)) return;
     if (userRole === "manager") {
       setApprovalModal({ id, name: lead?.clientName ?? "Lead" });
     } else {
@@ -88,10 +97,7 @@ export default function LeadsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "delete_lead", targetId: approvalModal.id, targetLabel: approvalModal.name, note }),
       });
-      if (res.ok) {
-        setApprovalToast("Approval request sent to owner");
-        setTimeout(() => setApprovalToast(""), 3500);
-      }
+      if (res.ok) showToast("Approval request sent to owner");
     } catch { /* silently fail */ }
     setApprovalModal(null);
   };
@@ -132,7 +138,7 @@ export default function LeadsPage() {
         <div>
           <h2 className="font-display font-bold text-primary text-xl">Leads</h2>
           <p className="text-neutral text-xs mt-0.5">
-            {leads.length} total · {counts["Converted"] ?? 0} converted · {counts["Follow-up"] ?? 0} need follow-up
+            {leads.length} total · {counts["Converted"] ?? 0} converted · {counts["Follow-up"] ?? 0} need follow-up · {counts["Dead"] ?? 0} dead
           </p>
         </div>
         <button
@@ -231,8 +237,8 @@ export default function LeadsPage() {
       {/* Content */}
       {leads.length > 0 && (
         view === "kanban"
-          ? <LeadKanban leads={filtered} onEdit={handleEdit} onDelete={handleDelete} onStatusChange={setStatus} canEdit={canActOnLead} />
-          : <LeadTable leads={filtered} onEdit={handleEdit} onDelete={handleDelete} canEdit={canActOnLead} />
+          ? <LeadKanban leads={filtered} onEdit={handleEdit} onDelete={handleDelete} onStatusChange={setStatus} onFollowUp={handleFollowUp} canEdit={canActOnLead} />
+          : <LeadTable leads={filtered} onEdit={handleEdit} onDelete={handleDelete} onFollowUp={handleFollowUp} canEdit={canActOnLead} />
       )}
 
       <AddLeadModal
@@ -241,6 +247,28 @@ export default function LeadsPage() {
         onSave={handleSave}
         editLead={editLead}
       />
+
+      {lastFollowUpLead && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setLastFollowUpLead(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
+            <p className="font-display font-bold text-primary text-base">Last follow-up?</p>
+            <p className="text-neutral text-sm mt-1 mb-5">
+              This is follow-up {MAX_FOLLOW_UPS} of {MAX_FOLLOW_UPS} for {lastFollowUpLead.clientName}. The lead moves to
+              Dead and its reminders close. If they reply later, move it to Replied.
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setLastFollowUpLead(null)} className="flex-1 py-2.5 border border-neutral/20 text-primary text-sm font-semibold rounded-xl hover:bg-neutral-light transition-colors">Cancel</button>
+              <button
+                onClick={() => { const l = lastFollowUpLead; setLastFollowUpLead(null); sendFollowUp(l); }}
+                className="flex-1 py-2.5 bg-primary text-white text-sm font-semibold rounded-xl hover:bg-primary/90 transition-colors"
+              >
+                Log & move to Dead
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

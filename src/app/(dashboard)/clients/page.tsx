@@ -14,6 +14,13 @@ import { SkeletonStatCard, SkeletonTable } from "@/components/ui/Skeleton";
 
 type ViewMode = "card" | "table";
 type StatusFilter = "All" | Client["status"];
+type TypeFilter = "all" | Client["billingType"];
+
+const TYPE_FILTERS: { value: TypeFilter; label: string }[] = [
+  { value: "all", label: "All types" },
+  { value: "recurring", label: "Recurring" },
+  { value: "one_time", label: "One-time" },
+];
 
 const STATUS_FILTERS: StatusFilter[] = ["All", "active", "inactive", "churned"];
 const FILTER_LABELS: Record<StatusFilter, string> = {
@@ -33,6 +40,7 @@ export default function ClientsPage() {
 
   const [view, setView] = useState<ViewMode>("card");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editClient, setEditClient] = useState<Client | null>(null);
@@ -43,8 +51,11 @@ export default function ClientsPage() {
       const q = search.toLowerCase();
       const matchSearch = !q || c.name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.company ?? "").toLowerCase().includes(q);
       const matchStatus = statusFilter === "All" || c.status === statusFilter;
-      return matchSearch && matchStatus;
-    }), [clients, search, statusFilter]);
+      const matchType = typeFilter === "all" || c.billingType === typeFilter;
+      return matchSearch && matchStatus && matchType;
+    }), [clients, search, statusFilter, typeFilter]);
+
+  const recurringCount = clients.filter((c) => c.billingType === "recurring").length;
 
   const counts = useMemo(() => {
     const map: Partial<Record<StatusFilter, number>> = { All: clients.length };
@@ -112,7 +123,7 @@ export default function ClientsPage() {
         <div>
           <h2 className="font-display font-bold text-primary text-xl">Clients</h2>
           <p className="text-neutral text-xs mt-0.5">
-            {clients.length} total · {counts["active"] ?? 0} active · {counts["churned"] ?? 0} churned
+            {clients.length} total · {counts["active"] ?? 0} active · {recurringCount} recurring · {clients.length - recurringCount} one-time
           </p>
         </div>
         <button
@@ -194,6 +205,14 @@ export default function ClientsPage() {
             </button>
           ))}
         </div>
+
+        <select
+          value={typeFilter}
+          onChange={(e) => setTypeFilter(e.target.value as TypeFilter)}
+          className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-white border border-neutral/10 text-primary shadow-sm focus:outline-none"
+        >
+          {TYPE_FILTERS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+        </select>
 
         <div className="flex items-center gap-1 bg-white border border-neutral/10 rounded-xl p-1 shadow-sm ml-auto">
           <button

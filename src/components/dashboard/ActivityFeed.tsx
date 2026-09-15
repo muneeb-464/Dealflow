@@ -35,15 +35,16 @@ function by(l: Lead) {
 }
 
 function leadToActivity(l: Lead) {
-  const amount = `${l.currency} ${Number(l.amount).toLocaleString()}`;
   if (l.status === "Converted")
-    return { icon: "converted", dot: DOT.Converted!, title: "Lead converted",     desc: `${l.clientName} · ${amount}${by(l)}` };
+    return { icon: "converted", dot: DOT.Converted!, title: "Lead converted",     desc: `${l.clientName} · ${l.service}${by(l)}` };
+  if (l.status === "Dead")
+    return { icon: "rejected",  dot: "bg-neutral", title: "Lead went dead",     desc: `${l.clientName} · ${l.followUpCount} follow-ups, no reply${by(l)}` };
   if (l.status === "Follow-up")
     return { icon: "followup",  dot: DOT["Follow-up"]!, title: "Follow-up needed", desc: `${l.clientName} · ${l.service}${by(l)}` };
   if (l.status === "Rejected")
     return { icon: "rejected",  dot: DOT.Rejected!, title: "Lead rejected",       desc: `${l.clientName} · ${l.service}${by(l)}` };
   if (l.status === "Replied")
-    return { icon: "lead",      dot: DOT.Replied!, title: "Lead replied",          desc: `${l.clientName} · ${amount}${by(l)}` };
+    return { icon: "lead",      dot: DOT.Replied!, title: "Lead replied",          desc: `${l.clientName} · ${l.service}${by(l)}` };
   return { icon: "lead",        dot: DOT.Sent!, title: "New lead added",           desc: `${l.clientName} via ${l.platform}${by(l)}` };
 }
 

@@ -36,7 +36,7 @@ export default function LeadCard({ lead, onEdit, onDelete }: Props) {
       </div>
 
       <div className="mt-3 pt-3 border-t border-neutral/8 flex items-center justify-between">
-        <p className="font-display font-bold text-primary text-sm">{lead.currency} {Number(lead.amount).toLocaleString()}</p>
+        <p className="text-neutral text-[11px]">Follow-ups {lead.followUpCount}</p>
         <p className="text-neutral text-[11px]">{new Date(lead.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
       </div>
     </div>

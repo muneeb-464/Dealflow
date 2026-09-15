@@ -3,6 +3,7 @@ import { Client } from "@/types/client";
 import { formatCurrency, formatDate, getInitials } from "@/lib/utils";
 import { getPlatformCls } from "@/components/leads/platformColors";
 import { PLATFORMS } from "@/constants/platforms";
+import BillingTypeBadge from "./BillingTypeBadge";
 
 const STATUS_CLS: Record<Client["status"], string> = {
   active:   "bg-secondary/10 text-secondary",
@@ -64,10 +65,13 @@ export default function ClientCard({ client, onEdit, onDelete, onClick, canEdit 
 
       {/* Status + Platform */}
       <div className="flex items-center justify-between mb-2">
-        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_CLS[client.status]}`}>
-          {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
-        </span>
-        <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${getPlatformCls(platformLabel)}`}>
+        <div className="flex items-center gap-1.5">
+          <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${STATUS_CLS[client.status]}`}>
+            {client.status.charAt(0).toUpperCase() + client.status.slice(1)}
+          </span>
+          <BillingTypeBadge type={client.billingType} />
+        </div>
+        <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${getPlatformCls(client.platform)}`}>
           {platformLabel}
         </span>
       </div>

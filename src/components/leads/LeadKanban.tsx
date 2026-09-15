@@ -1,8 +1,9 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import type { Lead } from "./LeadTable";
-import { LeadStatus } from "./LeadStatusBadge";
+import { LeadStatus, LEAD_UI_STATUSES } from "./LeadStatusBadge";
 import { getPlatformCls, getPlatformLabel } from "./platformColors";
+import FollowUpControl from "./FollowUpControl";
 
 interface ColConfig {
   status: LeadStatus;
@@ -55,6 +56,13 @@ const COLUMNS: ColConfig[] = [
     dotColor: "#F97316",
     emptyBorder: "#fdba74",
   },
+  {
+    status: "Dead",
+    label: "Dead",
+    headerStyle: { background: "#e4e4e7" },
+    dotColor: "#71717a",
+    emptyBorder: "#d4d4d8",
+  },
 ];
 
 const NEXT_STATUS: Partial<Record<LeadStatus, LeadStatus>> = {
@@ -69,10 +77,11 @@ interface Props {
   onEdit: (lead: Lead) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: LeadStatus) => void;
+  onFollowUp: (lead: Lead) => void;
   canEdit?: (lead: Lead) => boolean;
 }
 
-export default function LeadKanban({ leads, onEdit, onDelete, onStatusChange, canEdit }: Props) {
+export default function LeadKanban({ leads, onEdit, onDelete, onStatusChange, onFollowUp, canEdit }: Props) {
   return (
     <div className="flex gap-3 overflow-x-auto pb-3" style={{ marginLeft: "-4px", paddingLeft: "4px" }}>
       {COLUMNS.map((col) => {
@@ -129,6 +138,7 @@ export default function LeadKanban({ leads, onEdit, onDelete, onStatusChange, ca
                   onEdit={onEdit}
                   onDelete={onDelete}
                   onStatusChange={onStatusChange}
+                  onFollowUp={onFollowUp}
                   canAct={!canEdit || canEdit(lead)}
                 />
               ))}
@@ -140,8 +150,6 @@ export default function LeadKanban({ leads, onEdit, onDelete, onStatusChange, ca
   );
 }
 
-const ALL_STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
-
 const STATUS_DOT: Record<LeadStatus, string> = {
   Sent:        "#9ca3af",
   Pending:     "#4ADE80",
@@ -149,14 +157,16 @@ const STATUS_DOT: Record<LeadStatus, string> = {
   Replied:     "#10b981",
   Converted:   "#4ADE80",
   Rejected:    "#F97316",
+  Dead:        "#71717a",
 };
 
-function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange, canAct = true }: {
+function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange, onFollowUp, canAct = true }: {
   lead: Lead;
   nextStatus?: LeadStatus;
   onEdit: (l: Lead) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, s: LeadStatus) => void;
+  onFollowUp: (l: Lead) => void;
   canAct?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -168,7 +178,7 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange, canAct
     if (!btnRef.current) return;
     const r = btnRef.current.getBoundingClientRect();
     const menuW = 172;
-    const menuH = 320;
+    const menuH = 350;
     let left = r.right - menuW;
     let top = r.bottom + 6;
     if (left < 8) left = 8;
@@ -248,7 +258,7 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange, canAct
               {/* Move to */}
               <div style={{ borderTop: "1px solid #f3f4f6", marginTop: "4px", paddingTop: "4px" }}>
                 <p className="px-3 pb-1 text-[10px] font-semibold  uppercase tracking-wider" style={{ color: "#9ca3af" }}>Move to</p>
-                {ALL_STATUSES.filter((s) => s !== lead.status).map((s) => (
+                {LEAD_UI_STATUSES.filter((s) => s !== lead.status).map((s) => (
                   <button
                     key={s}
                     onMouseDown={(e) => e.stopPropagation()}
@@ -283,14 +293,16 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange, canAct
         </div>
       </div>
 
-      {/* Platform + amount */}
+      {/* Platform */}
       <div className="flex items-center justify-between">
         <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold ${getPlatformCls(lead.platform)}`}>
           {getPlatformLabel(lead.platform)}
         </span>
-        <span className="font-display font-bold text-primary text-xs">
-          {lead.currency} {Number(lead.amount).toLocaleString()}
-        </span>
+      </div>
+
+      {/* Follow-ups */}
+      <div className="mt-2.5">
+        <FollowUpControl lead={lead} onFollowUp={onFollowUp} canAct={canAct} />
       </div>
 
       {/* Quick advance */}
