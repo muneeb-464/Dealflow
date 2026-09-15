@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/withAuth";
-import { WorkspaceMember } from "@/models";
+import { User, WorkspaceMember } from "@/models";
 import mongoose from "mongoose";
 
 // POST /api/workspace/switch — change active workspace
@@ -15,8 +15,7 @@ export const POST = withAuth(async (req, ctx) => {
   });
   if (!membership) return NextResponse.json({ error: "Not a member of that workspace" }, { status: 403 });
 
-  ctx.user.activeWorkspaceId = new mongoose.Types.ObjectId(workspaceId);
-  await ctx.user.save();
+  await User.updateOne({ _id: ctx.user._id }, { $set: { activeWorkspaceId: new mongoose.Types.ObjectId(workspaceId) } });
 
   return NextResponse.json({ success: true, workspaceId });
 });

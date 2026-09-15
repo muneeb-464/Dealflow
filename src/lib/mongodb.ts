@@ -22,6 +22,12 @@ export async function connectDB(): Promise<typeof mongoose> {
     cache.promise = mongoose.connect(MONGODB_URI, {
       bufferCommands: false,
       family: 4,
+      maxPoolSize: 10,
+      // Fail in 10s instead of the 30s default — e.g. when the free Atlas cluster is paused
+      serverSelectionTimeoutMS: 10_000,
+    }).catch((err) => {
+      cache.promise = null; // let the next request retry instead of reusing a failed promise
+      throw err;
     });
   }
 

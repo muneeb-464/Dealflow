@@ -4,12 +4,12 @@ import { connectDB } from "./mongodb";
 import User from "@/models/User";
 import WorkspaceMember from "@/models/WorkspaceMember";
 import type { MemberRole } from "@/models/WorkspaceMember";
-import type { IUser } from "@/models/User";
-import mongoose from "mongoose";
+import type mongoose from "mongoose";
 
 export interface AuthContext {
   clerkId: string;
-  user: IUser;
+  // Plain object (lean) — fetch the full document if a handler needs to save it
+  user: { _id: mongoose.Types.ObjectId; name: string; email: string; activeWorkspaceId: mongoose.Types.ObjectId };
   workspaceId: mongoose.Types.ObjectId;
   role: MemberRole;
 }
@@ -31,7 +31,8 @@ export function withAuth(handler: RouteHandler, requiredRole?: MemberRole) {
 
       await connectDB();
 
-      const user = await User.findOne({ clerkId: userId });
+      // lean + select: this runs on every API call, skip Mongoose document hydration
+      const user = await User.findOne({ clerkId: userId }).select("_id name email activeWorkspaceId").lean();
       if (!user) {
         return NextResponse.json({ error: "User not found" }, { status: 404 });
       }
@@ -43,7 +44,7 @@ export function withAuth(handler: RouteHandler, requiredRole?: MemberRole) {
       const membership = await WorkspaceMember.findOne({
         userId: user._id,
         workspaceId: user.activeWorkspaceId,
-      });
+      }).select("role").lean();
 
       if (!membership) {
         return NextResponse.json({ error: "Not a workspace member" }, { status: 403 });
@@ -59,7 +60,7 @@ export function withAuth(handler: RouteHandler, requiredRole?: MemberRole) {
 
       const ctx: AuthContext = {
         clerkId: userId,
-        user,
+        user: { _id: user._id, name: user.name, email: user.email, activeWorkspaceId: user.activeWorkspaceId },
         workspaceId: user.activeWorkspaceId,
         role: membership.role,
       };

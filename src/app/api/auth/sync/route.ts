@@ -34,8 +34,12 @@ export async function POST() {
         const emailTaken = await User.findOne({ email, clerkId: { $ne: userId } }).lean();
         if (!emailTaken) user.email = email;
       }
-      await user.save();
+      await user.save(); // Mongoose skips the write when nothing changed
     } else {
+      // Clean up any orphan tagged-email docs created by old E11000 fallback.
+      // Only on this rare path — running it on every 30s poll cost a DB write each time.
+      await User.deleteMany({ email: new RegExp(`^${userId}\\+`), clerkId: { $ne: userId } });
+
       // No user with this clerkId — check if a user with this email already exists
       // (e.g. account created via different auth method or previous session)
       const existingByEmail = await User.findOne({ email });
@@ -75,9 +79,6 @@ export async function POST() {
       user.activeWorkspaceId = workspace._id;
       await user.save();
     }
-
-    // Clean up any orphan tagged-email docs created by old E11000 fallback
-    await User.deleteMany({ email: new RegExp(`^${userId}\\+`), clerkId: { $ne: userId } });
 
     let member = null;
     if (user.activeWorkspaceId) {

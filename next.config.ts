@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   devIndicators: false,
   experimental: {
-    optimizePackageImports: ["gsap", "recharts", "@tanstack/react-query"],
+    optimizePackageImports: ["gsap", "recharts"],
   },
   images: {
     dangerouslyAllowSVG: true,

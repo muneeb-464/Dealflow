@@ -4,7 +4,9 @@ import { useAuth } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 
-const POLL_INTERVAL_MS = 30_000;
+// Re-sync picks up role changes / removal from a workspace. Each sync costs a Clerk API call
+// plus DB reads, so poll only while the tab is visible, and re-sync when the user comes back.
+const POLL_INTERVAL_MS = 60_000;
 const MAX_RETRIES = 3;
 
 export default function SyncUser() {
@@ -14,6 +16,7 @@ export default function SyncUser() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const setSynced = useAuthStore((s) => s.setSynced);
   const removedRef = useRef(false);
+  const workspaceCheckedRef = useRef(false);
 
   useEffect(() => {
     if (!isSignedIn) return;
@@ -47,8 +50,9 @@ export default function SyncUser() {
         return;
       }
 
-      // Agency users without workspace
-      if (syncData.user.accountType !== "freelancer") {
+      // Agency users without workspace — only needs checking once per page load
+      if (syncData.user.accountType !== "freelancer" && !workspaceCheckedRef.current) {
+        workspaceCheckedRef.current = true;
         const wsRes = await fetch("/api/workspace").catch(() => null);
         if (wsRes?.ok) {
           const wsData = await wsRes.json().catch(() => null);
@@ -58,8 +62,26 @@ export default function SyncUser() {
     };
 
     sync();
-    const interval = setInterval(() => sync(), POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    let lastSync = Date.now();
+
+    const interval = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      lastSync = Date.now();
+      sync();
+    }, POLL_INTERVAL_MS);
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastSync > POLL_INTERVAL_MS) {
+        lastSync = Date.now();
+        sync();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [isSignedIn, router, setAuth, clearAuth, setSynced]);
 
   return null;
