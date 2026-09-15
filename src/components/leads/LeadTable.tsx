@@ -1,6 +1,6 @@
 "use client";
 import LeadStatusBadge, { LeadStatus } from "./LeadStatusBadge";
-import { getPlatformCls } from "./platformColors";
+import { getPlatformCls, getPlatformLabel } from "./platformColors";
 
 export interface Lead {
   id: string;
@@ -69,7 +69,7 @@ export default function LeadTable({ leads, onEdit, onDelete, canEdit }: Props) {
                   <p className="text-neutral text-xs truncate max-w-[120px]">{lead.service}</p>
                 </td>
                 <td className="px-4 py-3.5">
-                  <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${getPlatformCls(lead.platform)}`}>{lead.platform}</span>
+                  <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${getPlatformCls(lead.platform)}`}>{getPlatformLabel(lead.platform)}</span>
                 </td>
                 <td className="px-4 py-3.5">
                   <p className="text-primary text-xs font-bold font-display whitespace-nowrap">{lead.currency} {Number(lead.amount).toLocaleString()}</p>

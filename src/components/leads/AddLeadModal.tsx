@@ -4,8 +4,7 @@ import type { Lead } from "./LeadTable";
 import type { LeadStatus } from "./LeadStatusBadge";
 import { useWorkspaceStore } from "@/store/workspaceStore";
 import { useIsAgency } from "@/hooks/useIsAgency";
-
-const PLATFORMS = ["Upwork", "Fiverr", "LinkedIn", "Direct", "Referral", "WhatsApp", "Other"];
+import { PLATFORMS } from "@/constants/platforms";
 const STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected"];
 
 interface Props {
@@ -17,7 +16,7 @@ interface Props {
 
 const empty = (): Omit<Lead, "id"> => ({
   clientName: "",
-  platform: "Upwork",
+  platform: "UPWORK",
   amount: "",
   currency: "USD",
   status: "Sent",
@@ -112,8 +111,8 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
           {/* Platform + Status row */}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Platform">
-              <select value={form.platform} onChange={(e) => set("platform", e.target.value)} className={inputCls(false)}>
-                {PLATFORMS.map((p) => <option key={p}>{p}</option>)}
+              <select value={form.platform.toUpperCase()} onChange={(e) => set("platform", e.target.value)} className={inputCls(false)}>
+                {PLATFORMS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </Field>
             <Field label="Status">

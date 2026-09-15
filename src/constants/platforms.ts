@@ -5,6 +5,7 @@ export const PLATFORMS = [
   { value: "DIRECT", label: "Direct" },
   { value: "REFERRAL", label: "Referral" },
   { value: "WHATSAPP", label: "WhatsApp" },
+  { value: "COLD_EMAIL", label: "Cold Email" },
   { value: "OTHER", label: "Other" },
 ] as const;
 
@@ -17,5 +18,6 @@ export const PLATFORM_COLORS: Record<Platform, { bg: string; color: string }> = 
   DIRECT: { bg: "rgba(10,42,34,0.10)", color: "#0A2A22" },
   REFERRAL: { bg: "rgba(20,184,166,0.12)", color: "#0d9488" },
   WHATSAPP: { bg: "rgba(37,211,102,0.12)", color: "#128c7e" },
+  COLD_EMAIL: { bg: "rgba(249,115,22,0.12)", color: "#c2410c" },
   OTHER: { bg: "rgba(118,119,118,0.12)", color: "#767776" },
 };

@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export type LeadStatus = "sent" | "pending" | "followup_due" | "replied" | "converted" | "rejected";
-export type LeadPlatform = "upwork" | "fiverr" | "linkedin" | "direct" | "referral" | "whatsapp" | "other";
+export type LeadPlatform = "upwork" | "fiverr" | "linkedin" | "direct" | "referral" | "whatsapp" | "cold_email" | "other";
 export type LostReason = "budget_issue" | "no_fit" | "no_reply" | "went_with_competitor" | "project_cancelled" | "other";
 
 export interface ILead extends Document {
@@ -46,7 +46,7 @@ const LeadSchema = new Schema<ILead>(
     clientName: { type: String, required: true, trim: true },
     clientEmail: { type: String, lowercase: true, trim: true },
     clientCompany: { type: String, trim: true },
-    platform: { type: String, enum: ["upwork", "fiverr", "linkedin", "direct", "referral", "whatsapp", "other"], required: true },
+    platform: { type: String, enum: ["upwork", "fiverr", "linkedin", "direct", "referral", "whatsapp", "cold_email", "other"], required: true },
     serviceOffered: { type: String, required: true, trim: true },
     proposedAmount: { type: Number, required: true, min: 0 },
     currency: { type: String, default: "USD" },

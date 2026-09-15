@@ -5,9 +5,25 @@ export const platformBadge: Record<string, string> = {
   whatsapp:  "bg-teal-100 text-teal-800 border border-teal-300",
   referral:  "bg-orange-100 text-orange-700 border border-orange-300",
   direct:    "bg-violet-100 text-violet-800 border border-violet-300",
+  cold_email: "bg-amber-100 text-amber-800 border border-amber-300",
   other:     "bg-gray-100 text-gray-600 border border-gray-300",
 };
 
 export function getPlatformCls(platform: string): string {
   return platformBadge[platform.toLowerCase()] ?? platformBadge.other;
+}
+
+const platformLabel: Record<string, string> = {
+  upwork: "Upwork",
+  fiverr: "Fiverr",
+  linkedin: "LinkedIn",
+  whatsapp: "WhatsApp",
+  referral: "Referral",
+  direct: "Direct",
+  cold_email: "Cold Email",
+  other: "Other",
+};
+
+export function getPlatformLabel(platform: string): string {
+  return platformLabel[platform.toLowerCase()] ?? platform;
 }

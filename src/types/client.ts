@@ -1,5 +1,5 @@
 export type ClientStatus = "active" | "inactive" | "churned";
-export type ClientPlatform = "UPWORK" | "FIVERR" | "LINKEDIN" | "DIRECT" | "REFERRAL" | "WHATSAPP" | "OTHER";
+export type ClientPlatform = "UPWORK" | "FIVERR" | "LINKEDIN" | "DIRECT" | "REFERRAL" | "WHATSAPP" | "COLD_EMAIL" | "OTHER";
 export type ClientCurrency = "PKR" | "USD" | "EUR" | "GBP" | "AED" | "CAD" | "AUD";
 
 export interface Client {

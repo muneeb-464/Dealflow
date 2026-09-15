@@ -9,7 +9,7 @@ const CreateLeadSchema = z.object({
   clientName: z.string().min(1).max(100).trim(),
   clientEmail: z.string().optional(),
   clientCompany: z.string().optional(),
-  platform: z.enum(["upwork", "fiverr", "linkedin", "direct", "referral", "whatsapp", "other"]),
+  platform: z.enum(["upwork", "fiverr", "linkedin", "direct", "referral", "whatsapp", "cold_email", "other"]),
   serviceOffered: z.string().min(1).max(200).trim(),
   proposedAmount: z.number().min(0),
   currency: z.string().default("USD"),

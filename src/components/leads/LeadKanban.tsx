@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import type { Lead } from "./LeadTable";
 import { LeadStatus } from "./LeadStatusBadge";
-import { getPlatformCls } from "./platformColors";
+import { getPlatformCls, getPlatformLabel } from "./platformColors";
 
 interface ColConfig {
   status: LeadStatus;
@@ -286,7 +286,7 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange, canAct
       {/* Platform + amount */}
       <div className="flex items-center justify-between">
         <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold ${getPlatformCls(lead.platform)}`}>
-          {lead.platform}
+          {getPlatformLabel(lead.platform)}
         </span>
         <span className="font-display font-bold text-primary text-xs">
           {lead.currency} {Number(lead.amount).toLocaleString()}
