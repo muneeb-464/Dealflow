@@ -42,6 +42,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const wasClosed = CLOSED_STATUSES.includes(lead.status);
     Object.assign(lead, parsed.data);
+    // Stamp pipeline dates the first time a lead reaches these stages (used for "won this month")
+    if (lead.status === "replied" && !lead.repliedAt) lead.repliedAt = new Date();
+    if (lead.status === "converted" && !lead.convertedAt) lead.convertedAt = new Date();
     await lead.save();
 
     if (!wasClosed && CLOSED_STATUSES.includes(lead.status)) {

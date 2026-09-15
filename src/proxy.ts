@@ -16,6 +16,7 @@ const isPublicRoute = createRouteMatcher([
   "/invite(.*)",
   "/access-denied(.*)",
   "/api/guest(.*)",
+  "/api/external(.*)", // server-to-server, Bearer token checked in the route
 ]);
 
 const isAuthRoute = createRouteMatcher([
