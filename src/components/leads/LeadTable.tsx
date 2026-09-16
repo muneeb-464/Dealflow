@@ -6,6 +6,8 @@ import FollowUpControl from "./FollowUpControl";
 export interface Lead {
   id: string;
   clientName: string;
+  /** The lead's own email address. "" or undefined = none. */
+  email?: string;
   platform: string;
   /** Outreach batch this lead came from. "" or undefined = none. */
   campaign?: string;
@@ -65,7 +67,10 @@ export default function LeadTable({ leads, onEdit, onDelete, onFollowUp, canEdit
               <tr key={lead.id} className="border-b border-neutral/5 last:border-0 hover:bg-neutral-light/30 transition-colors group">
                 <td className="px-4 py-3.5">
                   <p className="text-primary text-xs font-semibold">{lead.clientName}</p>
-                  {lead.notes && <p className="text-neutral text-[11px] mt-0.5 truncate max-w-[140px]">{lead.notes}</p>}
+                  {lead.email && (
+                    <p className="text-neutral text-[11px] mt-0.5 truncate max-w-[140px]" title={lead.email}>{lead.email}</p>
+                  )}
+                  {lead.notes &&<p className="text-neutral text-[11px] mt-0.5 truncate max-w-[140px]">{lead.notes}</p>}
                   {lead.createdByName && (
                     <span className="inline-block mt-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-secondary/10 text-secondary">
                       {lead.createdByName}

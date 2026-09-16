@@ -36,7 +36,7 @@ export default function LeadsPage() {
     leads.filter((l) => {
       const q = search.toLowerCase();
       const matchSearch = !q || l.clientName.toLowerCase().includes(q) || l.service.toLowerCase().includes(q)
-        || (l.campaign ?? "").toLowerCase().includes(q);
+        || (l.campaign ?? "").toLowerCase().includes(q) || (l.email ?? "").toLowerCase().includes(q);
       const matchStatus = statusFilter === "All" || l.status === statusFilter;
       const matchCampaign = campaignFilter === "All" || (l.campaign ?? "") === campaignFilter;
       return matchSearch && matchStatus && matchCampaign;

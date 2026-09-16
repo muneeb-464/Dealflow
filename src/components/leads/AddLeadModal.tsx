@@ -13,8 +13,11 @@ interface Props {
   editLead?: Lead | null;
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const empty = (): LeadInput => ({
   clientName: "",
+  email: "",
   platform: "UPWORK",
   campaign: "",
   status: "Sent",
@@ -61,13 +64,19 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
     const e: typeof errors = {};
     if (!form.clientName.trim()) e.clientName = "Required";
     if (!form.service.trim()) e.service = "Required";
+    const email = (form.email ?? "").trim();
+    if (email && !EMAIL_RE.test(email)) e.email = "Enter a valid email address";
     return e;
   };
 
   const handleSubmit = () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    onSave({ ...form, campaign: (form.campaign ?? "").trim() });
+    onSave({
+      ...form,
+      email: (form.email ?? "").trim().toLowerCase(),
+      campaign: (form.campaign ?? "").trim(),
+    });
     onClose();
   };
 
@@ -99,6 +108,17 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
               onChange={(e) => set("clientName", e.target.value)}
               placeholder="e.g. TechCorp Ltd"
               className={inputCls(!!errors.clientName)}
+            />
+          </Field>
+
+          {/* Email — the lead's own address, used by the outreach automation */}
+          <Field label="Email" error={errors.email}>
+            <input
+              type="email"
+              value={form.email ?? ""}
+              onChange={(e) => set("email", e.target.value)}
+              placeholder="e.g. sarah@techcorp.com"
+              className={inputCls(!!errors.email)}
             />
           </Field>
 

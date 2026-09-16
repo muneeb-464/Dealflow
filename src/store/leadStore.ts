@@ -32,6 +32,7 @@ function toUILead(doc: any): Lead {
   return {
     id: String(doc._id),
     clientName: doc.clientName,
+    email: doc.email ?? "",
     platform: doc.platform,
     campaign: doc.campaign ?? "",
     status: DB_TO_UI[doc.status] ?? "Sent",
@@ -89,6 +90,7 @@ export const useLeadStore = create<LeadStore>((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         clientName: data.clientName,
+        email: (data.email ?? "").trim().toLowerCase(),
         platform: data.platform.toLowerCase(),
         campaign: (data.campaign ?? "").trim(),
         serviceOffered: data.service,
@@ -113,6 +115,7 @@ export const useLeadStore = create<LeadStore>((set, get) => ({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         clientName: data.clientName,
+        email: (data.email ?? "").trim().toLowerCase(),
         platform: data.platform.toLowerCase(),
         campaign: (data.campaign ?? "").trim(),
         serviceOffered: data.service,

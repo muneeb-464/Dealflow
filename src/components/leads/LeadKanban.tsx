@@ -209,6 +209,7 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange, onFoll
       <div className="flex items-start justify-between gap-1.5 mb-2.5">
         <div className="flex-1 min-w-0">
           <p className="font-display font-bold text-primary text-xs leading-snug truncate">{lead.clientName}</p>
+          {lead.email && <p className="text-neutral text-[10px] mt-0.5 truncate" title={lead.email}>{lead.email}</p>}
           <p className="text-neutral text-[11px] mt-0.5 truncate">{lead.service}</p>
         </div>
 

@@ -14,6 +14,7 @@ export interface ILead extends Document {
   clientName: string;
   clientEmail?: string;
   clientCompany?: string;
+  email: string;               // the lead's own address — what outreach automation sends to. "" = none
   platform: LeadPlatform;
   campaign: string;            // outreach batch this lead came from, e.g. "AI system". "" = none
   serviceOffered: string;
@@ -48,6 +49,7 @@ const LeadSchema = new Schema<ILead>(
     clientName: { type: String, required: true, trim: true },
     clientEmail: { type: String, lowercase: true, trim: true },
     clientCompany: { type: String, trim: true },
+    email: { type: String, trim: true, lowercase: true, default: "" },
     platform: { type: String, enum: LEAD_PLATFORMS, required: true },
     campaign: { type: String, trim: true, default: "" },
     serviceOffered: { type: String, required: true, trim: true },

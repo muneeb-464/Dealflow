@@ -5,11 +5,13 @@ import { withAuth } from "@/lib/withAuth";
 import type { AuthContext } from "@/lib/withAuth";
 import { Lead, Reminder } from "@/models";
 import { LEAD_PLATFORMS, LEAD_STATUSES } from "@/constants/leads";
+import { notifyLeadCreated } from "@/lib/leadWebhook";
 
 const CreateLeadSchema = z.object({
   clientName: z.string().min(1).max(100).trim(),
   clientEmail: z.string().optional(),
   clientCompany: z.string().optional(),
+  email: z.union([z.literal(""), z.string().email().max(200)]).optional(),
   platform: z.enum(LEAD_PLATFORMS),
   campaign: z.string().max(60).trim().optional(),
   serviceOffered: z.string().min(1).max(200).trim(),
@@ -78,6 +80,9 @@ export const POST = withAuth(async (req: Request, ctx: AuthContext) => {
       emailSent: false,
     },
   ]);
+
+  // On create only. Never blocks or fails the request — see lib/leadWebhook.ts
+  await notifyLeadCreated(lead, ctx.workspaceId);
 
   return NextResponse.json({ lead }, { status: 201 });
 });
