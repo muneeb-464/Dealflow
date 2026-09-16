@@ -7,6 +7,8 @@ export interface Lead {
   id: string;
   clientName: string;
   platform: string;
+  /** Outreach batch this lead came from. "" or undefined = none. */
+  campaign?: string;
   status: LeadStatus;
   service: string;
   notes: string;
@@ -75,6 +77,9 @@ export default function LeadTable({ leads, onEdit, onDelete, onFollowUp, canEdit
                 </td>
                 <td className="px-4 py-3.5">
                   <span className={`text-xs px-2 py-1 rounded-lg font-semibold ${getPlatformCls(lead.platform)}`}>{getPlatformLabel(lead.platform)}</span>
+                  {lead.campaign && (
+                    <p className="text-neutral text-[11px] mt-1 truncate max-w-[120px]" title={lead.campaign}>{lead.campaign}</p>
+                  )}
                 </td>
                 <td className="px-4 py-3.5">
                   <FollowUpControl lead={lead} onFollowUp={onFollowUp} canAct={!canEdit || canEdit(lead)} compact />

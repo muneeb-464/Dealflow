@@ -30,14 +30,27 @@ export default function LeadsPage() {
   const [view, setView] = useState<"kanban" | "table">("kanban");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeadStatus | "All">("All");
+  const [campaignFilter, setCampaignFilter] = useState("All");
 
   const filtered = useMemo(() =>
     leads.filter((l) => {
       const q = search.toLowerCase();
-      const matchSearch = !q || l.clientName.toLowerCase().includes(q) || l.service.toLowerCase().includes(q);
+      const matchSearch = !q || l.clientName.toLowerCase().includes(q) || l.service.toLowerCase().includes(q)
+        || (l.campaign ?? "").toLowerCase().includes(q);
       const matchStatus = statusFilter === "All" || l.status === statusFilter;
-      return matchSearch && matchStatus;
-    }), [leads, search, statusFilter]);
+      const matchCampaign = campaignFilter === "All" || (l.campaign ?? "") === campaignFilter;
+      return matchSearch && matchStatus && matchCampaign;
+    }), [leads, search, statusFilter, campaignFilter]);
+
+  // Campaigns present in the loaded leads, most recent first (the list is already sorted newest first)
+  const campaigns = useMemo(() => {
+    const seen: string[] = [];
+    leads.forEach((l) => {
+      const c = (l.campaign ?? "").trim();
+      if (c && !seen.includes(c)) seen.push(c);
+    });
+    return seen;
+  }, [leads]);
 
   const counts = useMemo(() => {
     const map: Partial<Record<LeadStatus | "All", number>> = { All: leads.length };
@@ -188,6 +201,18 @@ export default function LeadsPage() {
             </button>
           ))}
         </div>
+
+        {campaigns.length > 0 && (
+          <select
+            value={campaignFilter}
+            onChange={(e) => setCampaignFilter(e.target.value)}
+            title="Filter by campaign"
+            className="text-[11px] font-semibold px-2.5 py-1.5 rounded-lg bg-white border border-neutral/10 text-primary shadow-sm focus:outline-none"
+          >
+            <option value="All">All campaigns</option>
+            {campaigns.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
+        )}
 
         <div className="flex items-center gap-1 bg-white border border-neutral/10 rounded-xl p-1 shadow-sm ml-auto">
           <button

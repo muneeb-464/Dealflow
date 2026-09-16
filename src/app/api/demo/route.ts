@@ -21,6 +21,7 @@ const SERVICES = ["Web Development","Mobile App Development","UI/UX Design","Log
 
 const PLATFORMS: Array<"upwork"|"fiverr"|"linkedin"|"direct"|"referral"|"whatsapp"|"other"> = ["upwork","fiverr","linkedin","direct","referral","whatsapp","other"];
 const STATUSES: Array<"sent"|"pending"|"followup_due"|"replied"|"converted"|"rejected"> = ["sent","pending","followup_due","replied","converted","rejected"];
+const CAMPAIGNS = ["AI system","Client portal","Automation setup","Website redesign"];
 const CLIENT_STATUSES: Array<"active"|"inactive"|"churned"> = ["active","active","active","inactive","churned"];
 
 const LEAD_NOTES = [
@@ -121,6 +122,7 @@ export async function POST() {
         clientEmail: rndEmail(first, last, company),
         clientCompany: company,
         platform: rnd(PLATFORMS),
+        campaign: rnd(CAMPAIGNS),
         serviceOffered: rnd(SERVICES),
         proposedAmount: rndAmount(),
         currency: "USD",

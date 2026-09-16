@@ -15,6 +15,7 @@ export interface ILead extends Document {
   clientEmail?: string;
   clientCompany?: string;
   platform: LeadPlatform;
+  campaign: string;            // outreach batch this lead came from, e.g. "AI system". "" = none
   serviceOffered: string;
   proposedAmount?: number;     // legacy — the UI no longer asks for a price
   currency: string;
@@ -48,6 +49,7 @@ const LeadSchema = new Schema<ILead>(
     clientEmail: { type: String, lowercase: true, trim: true },
     clientCompany: { type: String, trim: true },
     platform: { type: String, enum: LEAD_PLATFORMS, required: true },
+    campaign: { type: String, trim: true, default: "" },
     serviceOffered: { type: String, required: true, trim: true },
     proposedAmount: { type: Number, min: 0 },
     currency: { type: String, default: "USD" },
@@ -75,6 +77,7 @@ const LeadSchema = new Schema<ILead>(
 // Compound index for common dashboard query: workspace + status
 LeadSchema.index({ workspaceId: 1, status: 1 });
 LeadSchema.index({ workspaceId: 1, assignedTo: 1, status: 1 });
+LeadSchema.index({ workspaceId: 1, campaign: 1 });
 
 const Lead: Model<ILead> = mongoose.models.Lead ?? mongoose.model<ILead>("Lead", LeadSchema);
 export default Lead;

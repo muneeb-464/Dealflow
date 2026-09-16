@@ -16,6 +16,7 @@ interface Props {
 const empty = (): LeadInput => ({
   clientName: "",
   platform: "UPWORK",
+  campaign: "",
   status: "Sent",
   service: "",
   notes: "",
@@ -29,10 +30,16 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
   const isAgency = useIsAgency();
   const [form, setForm] = useState(empty());
   const [errors, setErrors] = useState<Partial<Record<keyof typeof form, string>>>({});
+  const [campaigns, setCampaigns] = useState<string[]>([]);
 
   useEffect(() => {
     if (!open) return;
     if (isAgency && members.length === 0) fetchMembers();
+    // Campaign names already used in this workspace, for the suggestion list
+    fetch("/api/leads/campaigns")
+      .then((r) => r.json())
+      .then((d) => setCampaigns(d.campaigns ?? []))
+      .catch(() => {});
     if (editLead) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id: _id, followUpCount: _count, lastFollowUpAt: _last, ...rest } = editLead;
@@ -60,7 +67,7 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
   const handleSubmit = () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    onSave(form);
+    onSave({ ...form, campaign: (form.campaign ?? "").trim() });
     onClose();
   };
 
@@ -118,6 +125,21 @@ export default function AddLeadModal({ open, onClose, onSave, editLead }: Props)
               </select>
             </Field>
           </div>
+
+          {/* Campaign — free text, existing names offered as suggestions */}
+          <Field label="Campaign">
+            <input
+              value={form.campaign ?? ""}
+              onChange={(e) => set("campaign", e.target.value)}
+              list="lead-campaigns"
+              maxLength={60}
+              placeholder="e.g. AI system"
+              className={inputCls(false)}
+            />
+            <datalist id="lead-campaigns">
+              {campaigns.map((c) => <option key={c} value={c} />)}
+            </datalist>
+          </Field>
 
           {/* Date */}
           <Field label="Lead Sent Date">

@@ -12,6 +12,7 @@ const UpdateLeadSchema = z.object({
   clientEmail: z.string().optional(),
   clientCompany: z.string().optional(),
   platform: z.enum(LEAD_PLATFORMS).optional(),
+  campaign: z.string().max(60).trim().optional(),
   serviceOffered: z.string().min(1).max(200).trim().optional(),
   proposedAmount: z.number().min(0).optional(),
   currency: z.string().optional(),

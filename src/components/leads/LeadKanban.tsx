@@ -293,11 +293,19 @@ function KanbanCard({ lead, nextStatus, onEdit, onDelete, onStatusChange, onFoll
         </div>
       </div>
 
-      {/* Platform */}
-      <div className="flex items-center justify-between">
+      {/* Platform + campaign */}
+      <div className="flex items-center justify-between gap-1.5">
         <span className={`text-[11px] px-2 py-0.5 rounded-md font-semibold ${getPlatformCls(lead.platform)}`}>
           {getPlatformLabel(lead.platform)}
         </span>
+        {lead.campaign && (
+          <span
+            className="text-[10px] text-neutral truncate max-w-[110px]"
+            title={`Campaign: ${lead.campaign}`}
+          >
+            {lead.campaign}
+          </span>
+        )}
       </div>
 
       {/* Follow-ups */}

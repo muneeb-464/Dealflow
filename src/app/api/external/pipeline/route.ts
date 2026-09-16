@@ -47,7 +47,7 @@ export async function GET(req: Request) {
       workspaceId: user.activeWorkspaceId,
       ...(includeDemo ? {} : { isDemoData: { $ne: true } }),
     })
-      .select("clientName clientCompany serviceOffered platform status followUpCount lastFollowUpAt leadSentAt repliedAt convertedAt updatedAt createdAt")
+      .select("clientName clientCompany serviceOffered platform campaign status followUpCount lastFollowUpAt leadSentAt repliedAt convertedAt updatedAt createdAt")
       .sort({ updatedAt: -1 })
       .lean();
 
@@ -65,6 +65,7 @@ export async function GET(req: Request) {
             contact: l.clientName,
             service: l.serviceOffered,
             platform: l.platform,
+            campaign: l.campaign ?? "",
             status: l.status,
             followUpCount: l.followUpCount ?? 0,
             lastTouchAt: lastTouch ? new Date(lastTouch).toISOString() : null,
