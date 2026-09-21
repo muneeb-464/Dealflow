@@ -17,7 +17,9 @@ import type { LeadStatus } from "@/models/Lead";
 
 const StatusSchema = z.object({
   status: z.enum(["sent", "replied", "dead"]),
-  step: z.number().int().min(0).max(MAX_FOLLOW_UPS).optional(),
+  // The sender counts emails: step 1 is the first email, the rest are follow-ups. So the highest
+  // step is one more than the follow-up limit, and followUpCount below is step - 1.
+  step: z.number().int().min(0).max(MAX_FOLLOW_UPS + 1).optional(),
   at: z.string().optional(),
   note: z.string().max(200).optional(),
 });
@@ -59,7 +61,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     lead.status = status;
     lead.lastFollowUpAt = touchedAt;
-    if (step !== undefined) lead.followUpCount = step;
+    // Step 1 is the first email, not a follow-up.
+    if (step !== undefined) lead.followUpCount = Math.max(0, step - 1);
     if (status === "replied" && !lead.repliedAt) lead.repliedAt = touchedAt;
     if (status === "dead" && !lead.lostReason) lead.lostReason = "no_reply";
 

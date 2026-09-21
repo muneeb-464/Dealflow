@@ -13,20 +13,21 @@ interface ColConfig {
   emptyBorder: string;
 }
 
+// Pending first: a lead lands there when it is added and moves right as the outreach goes out.
 const COLUMNS: ColConfig[] = [
-  {
-    status: "Sent",
-    label: "Sent",
-    headerStyle: { background: "#e8e8e8" },
-    dotColor: "#9ca3af",
-    emptyBorder: "#d1d5db",
-  },
   {
     status: "Pending",
     label: "Pending",
     headerStyle: { background: "#dcfce7" },
     dotColor: "#4ADE80",
     emptyBorder: "#bbf7d0",
+  },
+  {
+    status: "Sent",
+    label: "Sent",
+    headerStyle: { background: "#e8e8e8" },
+    dotColor: "#9ca3af",
+    emptyBorder: "#d1d5db",
   },
   {
     status: "Follow-up",
@@ -65,9 +66,10 @@ const COLUMNS: ColConfig[] = [
   },
 ];
 
+// The one-click step forward on a card. Pending is before the first email, so it moves to Sent.
 const NEXT_STATUS: Partial<Record<LeadStatus, LeadStatus>> = {
-  Sent: "Pending",
-  Pending: "Replied",
+  Pending: "Sent",
+  Sent: "Replied",
   "Follow-up": "Replied",
   Replied: "Converted",
 };

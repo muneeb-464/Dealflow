@@ -1,6 +1,6 @@
 export type LeadStatus = "Sent" | "Pending" | "Follow-up" | "Replied" | "Converted" | "Rejected" | "Dead";
 
-export const LEAD_UI_STATUSES: LeadStatus[] = ["Sent", "Pending", "Follow-up", "Replied", "Converted", "Rejected", "Dead"];
+export const LEAD_UI_STATUSES: LeadStatus[] = ["Pending", "Sent", "Follow-up", "Replied", "Converted", "Rejected", "Dead"];
 
 const config: Record<LeadStatus, { label: string; className: string }> = {
   Sent:        { label: "Sent",       className: "bg-slate-100 text-slate-600 border border-slate-200" },

@@ -18,7 +18,7 @@ const CreateLeadSchema = z.object({
   proposedAmount: z.number().min(0).optional(),
   currency: z.string().default("USD"),
   notes: z.string().optional(),
-  status: z.enum(LEAD_STATUSES).default("sent"),
+  status: z.enum(LEAD_STATUSES).default("pending"),
   leadSentAt: z.string().optional(),
 });
 

@@ -60,7 +60,8 @@ const LeadSchema = new Schema<ILead>(
     status: {
       type: String,
       enum: LEAD_STATUSES,
-      default: "sent",
+      // A new lead is waiting to be emailed, not already emailed.
+      default: "pending",
       index: true,
     },
     leadSentAt: { type: Date, default: Date.now },

@@ -1,12 +1,14 @@
 // Shared lead rules — used by the Mongoose model, API routes and UI.
 
-export const LEAD_STATUSES = ["sent", "pending", "followup_due", "replied", "converted", "rejected", "dead"] as const;
+// Order matters: this is the order the board and the filter tabs use. A new lead starts at
+// "pending" — nothing has been emailed yet — and moves to "sent" when the first email goes out.
+export const LEAD_STATUSES = ["pending", "sent", "followup_due", "replied", "converted", "rejected", "dead"] as const;
 export type LeadStatusDB = (typeof LEAD_STATUSES)[number];
 
 export const LEAD_PLATFORMS = ["upwork", "fiverr", "linkedin", "direct", "referral", "whatsapp", "cold_email", "other"] as const;
 
 // A lead gets at most this many follow-ups. The last one moves it to "dead".
-export const MAX_FOLLOW_UPS = 3;
+export const MAX_FOLLOW_UPS = 2;
 
 // A waiting lead is due for its next follow-up this many days after the last touch (sent or follow-up).
 export const FOLLOW_UP_AFTER_DAYS = 3;
