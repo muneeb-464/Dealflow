@@ -35,7 +35,10 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
         status: { $in: FOLLOW_UP_STATUSES },
         followUpCount: { $lt: MAX_FOLLOW_UPS },
       },
-      { $inc: { followUpCount: 1 }, $set: { lastFollowUpAt: now, status: "pending" } },
+      // "sent", not "pending": a follow-up has just gone out, so the lead is waiting for a reply.
+      // "pending" now means nothing has been emailed at all, and setting it here sent the lead
+      // back to the Pending column after a follow-up.
+      { $inc: { followUpCount: 1 }, $set: { lastFollowUpAt: now, status: "sent" } },
       { returnDocument: "after" }
     );
 

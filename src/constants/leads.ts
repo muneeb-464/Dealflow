@@ -14,7 +14,9 @@ export const MAX_FOLLOW_UPS = 2;
 export const FOLLOW_UP_AFTER_DAYS = 3;
 
 // Follow-ups can only be logged while the lead is still waiting for a reply.
-export const FOLLOW_UP_STATUSES: LeadStatusDB[] = ["sent", "pending", "followup_due"];
+// "pending" is not here: it means nothing has been emailed yet, so there is nothing to follow up,
+// and counting it made a brand new lead look due for a follow-up three days after it was created.
+export const FOLLOW_UP_STATUSES: LeadStatusDB[] = ["sent", "followup_due"];
 
 // Closed leads — no more follow-ups, reminders get closed.
 export const CLOSED_STATUSES: LeadStatusDB[] = ["converted", "rejected", "dead"];

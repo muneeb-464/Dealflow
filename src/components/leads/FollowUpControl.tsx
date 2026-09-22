@@ -3,7 +3,7 @@ import type { Lead } from "./LeadTable";
 import { MAX_FOLLOW_UPS } from "@/constants/leads";
 
 // UI statuses where a follow-up can still be sent (mirrors FOLLOW_UP_STATUSES in constants/leads.ts)
-const CAN_FOLLOW_UP: Lead["status"][] = ["Sent", "Pending", "Follow-up"];
+const CAN_FOLLOW_UP: Lead["status"][] = ["Sent", "Follow-up"];
 
 export function canFollowUp(lead: Lead) {
   return CAN_FOLLOW_UP.includes(lead.status) && lead.followUpCount < MAX_FOLLOW_UPS;
