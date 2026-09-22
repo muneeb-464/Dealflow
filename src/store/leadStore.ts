@@ -35,7 +35,7 @@ function toUILead(doc: any): Lead {
     email: doc.email ?? "",
     platform: doc.platform,
     campaign: doc.campaign ?? "",
-    status: DB_TO_UI[doc.status] ?? "Sent",
+    status: DB_TO_UI[doc.status] ?? "Pending",
     service: doc.serviceOffered,
     notes: doc.notes ?? "",
     sentAt: doc.leadSentAt ? new Date(doc.leadSentAt).toISOString() : new Date().toISOString(),

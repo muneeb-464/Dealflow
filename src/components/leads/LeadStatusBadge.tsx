@@ -13,7 +13,7 @@ const config: Record<LeadStatus, { label: string; className: string }> = {
 };
 
 export default function LeadStatusBadge({ status }: { status: LeadStatus }) {
-  const { label, className } = config[status] ?? config.Sent;
+  const { label, className } = config[status] ?? config.Pending;
   return (
     <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${className}`}>{label}</span>
   );

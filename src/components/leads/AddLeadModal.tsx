@@ -20,7 +20,7 @@ const empty = (): LeadInput => ({
   email: "",
   platform: "UPWORK",
   campaign: "",
-  status: "Sent",
+  status: "Pending",
   service: "",
   notes: "",
   sentAt: new Date().toISOString().slice(0, 10),
