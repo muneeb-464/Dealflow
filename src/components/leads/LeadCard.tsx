@@ -1,5 +1,5 @@
 import type { Lead } from "./LeadTable";
-import LeadStatusBadge from "./LeadStatusBadge";
+import LeadStatusBadge, { boardColumn } from "./LeadStatusBadge";
 
 interface Props {
   lead: Lead;
@@ -31,7 +31,7 @@ export default function LeadCard({ lead, onEdit, onDelete }: Props) {
       </div>
 
       <div className="flex items-center justify-between">
-        <LeadStatusBadge status={lead.status} />
+        <LeadStatusBadge status={boardColumn(lead)} />
         <span className="text-[11px] text-primary bg-neutral/8 px-2 py-0.5 rounded-lg font-medium">{lead.platform}</span>
       </div>
 

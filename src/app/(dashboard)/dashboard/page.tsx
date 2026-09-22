@@ -8,7 +8,7 @@ import { useClientStore } from "@/store/clientStore";
 import StatCard from "@/components/dashboard/StatCard";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import ActivityFeed from "@/components/dashboard/ActivityFeed";
-import LeadStatusBadge, { LeadStatus, LEAD_UI_STATUSES } from "@/components/leads/LeadStatusBadge";
+import LeadStatusBadge, { LeadStatus, LEAD_UI_STATUSES, boardColumn } from "@/components/leads/LeadStatusBadge";
 import { getPlatformCls } from "@/components/leads/platformColors";
 import { PLATFORMS } from "@/constants/platforms";
 import { formatCurrency, formatDate, getInitials, toUSD } from "@/lib/utils";
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                         <span className="text-primary text-xs font-bold font-display">{l.followUpCount}/{MAX_FOLLOW_UPS}</span>
                       </td>
                       <td className="py-3">
-                        <LeadStatusBadge status={l.status} />
+                        <LeadStatusBadge status={boardColumn(l)} />
                       </td>
                     </tr>
                   ))}

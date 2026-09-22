@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import type { Lead } from "./LeadTable";
-import { LeadStatus, LEAD_UI_STATUSES } from "./LeadStatusBadge";
+import { LeadStatus, LEAD_UI_STATUSES, boardColumn } from "./LeadStatusBadge";
 import { getPlatformCls, getPlatformLabel } from "./platformColors";
 import FollowUpControl from "./FollowUpControl";
 
@@ -87,7 +87,7 @@ export default function LeadKanban({ leads, onEdit, onDelete, onStatusChange, on
   return (
     <div className="flex gap-3 overflow-x-auto pb-3" style={{ marginLeft: "-4px", paddingLeft: "4px" }}>
       {COLUMNS.map((col) => {
-        const colLeads = leads.filter((l) => l.status === col.status);
+        const colLeads = leads.filter((l) => boardColumn(l) === col.status);
         return (
           <div key={col.status} className="flex-shrink-0 flex flex-col gap-2" style={{ width: "240px" }}>
 

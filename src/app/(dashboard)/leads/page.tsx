@@ -6,7 +6,7 @@ import LeadTable, { Lead, LeadInput } from "@/components/leads/LeadTable";
 import LeadKanban from "@/components/leads/LeadKanban";
 import AddLeadModal from "@/components/leads/AddLeadModal";
 import ApprovalRequestModal from "@/components/leads/ApprovalRequestModal";
-import { LeadStatus, LEAD_UI_STATUSES } from "@/components/leads/LeadStatusBadge";
+import { LeadStatus, LEAD_UI_STATUSES, boardColumn } from "@/components/leads/LeadStatusBadge";
 import { SkeletonTable } from "@/components/ui/Skeleton";
 import { MAX_FOLLOW_UPS } from "@/constants/leads";
 
@@ -37,7 +37,7 @@ export default function LeadsPage() {
       const q = search.toLowerCase();
       const matchSearch = !q || l.clientName.toLowerCase().includes(q) || l.service.toLowerCase().includes(q)
         || (l.campaign ?? "").toLowerCase().includes(q) || (l.email ?? "").toLowerCase().includes(q);
-      const matchStatus = statusFilter === "All" || l.status === statusFilter;
+      const matchStatus = statusFilter === "All" || boardColumn(l) === statusFilter;
       const matchCampaign = campaignFilter === "All" || (l.campaign ?? "") === campaignFilter;
       return matchSearch && matchStatus && matchCampaign;
     }), [leads, search, statusFilter, campaignFilter]);
@@ -54,7 +54,7 @@ export default function LeadsPage() {
 
   const counts = useMemo(() => {
     const map: Partial<Record<LeadStatus | "All", number>> = { All: leads.length };
-    STATUSES.forEach((s) => { map[s] = leads.filter((l) => l.status === s).length; });
+    STATUSES.forEach((s) => { map[s] = leads.filter((l) => boardColumn(l) === s).length; });
     return map;
   }, [leads]);
 

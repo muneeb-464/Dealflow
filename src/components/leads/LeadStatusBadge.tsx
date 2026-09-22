@@ -2,6 +2,18 @@ export type LeadStatus = "Sent" | "Pending" | "Follow-up" | "Replied" | "Convert
 
 export const LEAD_UI_STATUSES: LeadStatus[] = ["Pending", "Sent", "Follow-up", "Replied", "Converted", "Rejected", "Dead"];
 
+/**
+ * Which column a lead belongs in.
+ *
+ * The status alone cannot say: every email that goes out leaves the lead "sent", and how many of
+ * them were follow-ups is counted separately. So a lead one follow-up in looked the same as one
+ * that had only had its first email, and the Follow-up column stayed empty for every lead a
+ * campaign was working through. The follow-up count decides it.
+ */
+export function boardColumn(lead: { status: LeadStatus; followUpCount?: number }): LeadStatus {
+  return lead.status === "Sent" && (lead.followUpCount ?? 0) > 0 ? "Follow-up" : lead.status;
+}
+
 const config: Record<LeadStatus, { label: string; className: string }> = {
   Sent:        { label: "Sent",       className: "bg-slate-100 text-slate-600 border border-slate-200" },
   Pending:     { label: "Pending",    className: "bg-amber-100 text-amber-700 border border-amber-200" },

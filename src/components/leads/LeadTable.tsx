@@ -1,5 +1,5 @@
 "use client";
-import LeadStatusBadge, { LeadStatus } from "./LeadStatusBadge";
+import LeadStatusBadge, { LeadStatus, boardColumn } from "./LeadStatusBadge";
 import { getPlatformCls, getPlatformLabel } from "./platformColors";
 import FollowUpControl from "./FollowUpControl";
 
@@ -90,7 +90,7 @@ export default function LeadTable({ leads, onEdit, onDelete, onFollowUp, canEdit
                   <FollowUpControl lead={lead} onFollowUp={onFollowUp} canAct={!canEdit || canEdit(lead)} compact />
                 </td>
                 <td className="px-4 py-3.5">
-                  <LeadStatusBadge status={lead.status} />
+                  <LeadStatusBadge status={boardColumn(lead)} />
                 </td>
                 <td className="px-4 py-3.5">
                   <p className="text-neutral text-xs whitespace-nowrap">{new Date(lead.sentAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
